@@ -1,0 +1,26 @@
+{
+  "name": "angular-cloud-kit",
+  "version": "0.0.0",
+  "homepage": "https://github.com/watchinharrison/angular-cloud-kit",
+  "authors": [
+    "watchinharrison <watchinharrison@me.com>"
+  ],
+  "description": "Angular Cloud Kit Module",
+  "main": "angular-cloud-kit.js",
+  "keywords": [
+    "angular",
+    "cloudKit",
+    "apple"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "cloudKit":"https://cdn.apple-cloudkit.com/ck/1/cloudkit.js"
+  }
+}
