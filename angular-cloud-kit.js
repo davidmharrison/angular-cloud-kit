@@ -35,7 +35,7 @@ angular.module('ngCloudKit', []).provider('$cloudKit', function() {
 
 	        // And generate an API token through CloudKit Dashboard.
 	        apiToken: module.apiToken,
-
+	        
 	        auth: {
 	          buttonSize: 'medium',
 	          persist: true // Sets a cookie.

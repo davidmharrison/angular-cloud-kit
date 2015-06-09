@@ -51,7 +51,7 @@ https://developer.mozilla.org/en-US/docs/IndexedDB/Using_IndexedDB.
 You can also define your own error handlers, overwriting the default ones, which log to console.
 
 
-Inside your controller you use `$indexedDB` like this:
+Inside your controller you use `$cloudKit` like this:
 
 ```javascript
 angular.module('myModuleName')
@@ -79,7 +79,7 @@ angular.module('myModuleName')
    * find all persons older than 40 years
    */
    
-   var myQuery = $indexedDB.queryBuilder().$index('age_idx').$gt(40).$asc.compile();
+   var myQuery = $cloudKit.queryBuilder().$index('age_idx').$gt(40).$asc.compile();
    myObjectStore.each(myQuery).then(function(cursor){
      cursor.key;
      cursor.value;
