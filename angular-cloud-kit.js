@@ -6,7 +6,7 @@
 
 'use strict';
 
-angular.module('ngCloudKit', []).provider('$cloudKit', function() {
+angular.module('cloudKit', []).provider('$cloudKit', function() {
     var module          = this;
 
 
