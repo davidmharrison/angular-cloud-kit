@@ -6,45 +6,73 @@
 
 // 'use strict';
 
-var cloudKit = angular.module('cloudKit', []).provider('$cloudKit', function() {
+var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', function() {
 	var module          = this;
 	module.containers 	= [];
+	// module.ckSession	= null;
 
 	module.connection = function(container) {
         module.containers.push(container);
         return this;
     };
 
-	module.$get = ['$q', '$rootScope', '$window', function ($q,$rootScope,$window) {
+	module.$get = ['$q','$http','$cookieStore', function ($q,$http,$cookieStore) {
 
-		var ObjectStore = function(storeName) {
-	        this.storeName = storeName;
-	        this.transaction = undefined;
-	    };
+	    function cloudFactory() {
+			
+	    	var container = module.containers[0];
 
-	    ObjectStore.prototype = {
+			function Resource() {
+				
+			}
 
-	    }
+			Resource.auth = function() {
+				var cloudCookie = $cookieStore.get(container.container);
+				if(cloudCookie) {
+					container.ckSession = cloudCookie;
+				}
+				container.database = 'public';
+				var authurl = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/users/current?ckAPIToken="+container.api;
+				if(container.ckSession) {
+					authurl = authurl+"&ckSession="+encodeURIComponent(container.ckSession);
+				}
+				var requestAuth = $http.get(authurl);
+				requestAuth.success(function(result){
+					console.log(result);
+				}).error(function(error){
+					if(error && error.redirectUrl) {
+						window.open(error.redirectUrl);
+					}
+				})
+				window.addEventListener('message', function(e) {
+				    if(e.data.ckSession) {
+				    	
+				    	$cookieStore.put(container.container,e.data.ckSession);
+					    container.ckSession = e.data.ckSession;
+					    Resource.auth();
+					}
+				});
+				return requestAuth;
+			}
 
-	    return {
-			/**
-	         * @ngdoc method
-	         * @name $indexedDB.objectStore
-	         * @function
-	         *
-	         * @description an IDBObjectStore to use
-	         *
-	         * @params {string} storename the name of the objectstore to use
-	         * @returns {object} ObjectStore
-	         */
-	        objectStore: function(storeName) {
-	            return new ObjectStore(storeName);
-	        }
+			Resource.prototype['$auth'] = function() {
+	           	if (isFunction(params)) {
+	              error = success; success = params; params = {};
+	            }
+	            var result = Resource['auth'].call();
+	            return result.$promise || result;
+	        };
+
+			return Resource;
+
 		}
+
+		return cloudFactory;
 
     }];
 
 });
+
 // .provider('$cloudKit', function() {
 //     var module          = this;
 
