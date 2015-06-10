@@ -8,6 +8,25 @@
 
 var $resourceMinErr = angular.$$minErr('$resource');
 
+var MEMBER_NAME_REGEX = /^(\.[a-zA-Z_$][0-9a-zA-Z_$]*)+$/;
+
+function isValidDottedPath(path) {
+  return (path != null && path !== '' && path !== 'hasOwnProperty' &&
+      MEMBER_NAME_REGEX.test('.' + path));
+}
+
+function lookupDottedPath(obj, path) {
+  if (!isValidDottedPath(path)) {
+    throw $resourceMinErr('badmember', 'Dotted member path "@{0}" is invalid.', path);
+  }
+  var keys = path.split('.');
+  for (var i = 0, ii = keys.length; i < ii && obj !== undefined; i++) {
+    var key = keys[i];
+    obj = (obj !== null) ? obj[key] : undefined;
+  }
+  return obj;
+}
+
 function shallowClearAndCopy(src, dst) {
   dst = dst || {};
 
@@ -24,8 +43,44 @@ function shallowClearAndCopy(src, dst) {
   return dst;
 }
 
+function dataURItoBlob(dataURI) {
+    // convert base64/URLEncoded data component to raw binary data held in a string
+    var byteString;
+    if (dataURI.split(',')[0].indexOf('base64') >= 0)
+        byteString = atob(dataURI.split(',')[1]);
+    else
+        byteString = unescape(dataURI.split(',')[1]);
+
+    // separate out the mime component
+    var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+
+    // write the bytes of the string to a typed array
+    var ia = new Uint8Array(byteString.length);
+    for (var i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+
+    return new Blob([ia], {type:mimeString});
+}
+
 var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', function() {
 	var module          = this;
+	var provider = this;
+
+	this.defaults = {
+      // Strip slashes by default
+      stripTrailingSlashes: true,
+
+      // Default actions configuration
+      actions: {
+        'get': {method: 'GET'},
+        'save': {method: 'POST'},
+        'query': {method: 'GET', isArray: true},
+        'remove': {method: 'DELETE'},
+        'delete': {method: 'DELETE'}
+      }
+    };
+
 	module.containers 	= [];
 	// module.ckSession	= null;
 
@@ -40,17 +95,172 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
         return this;
     };
 
-	module.$get = ['$q','$http','$cookieStore', function ($q,$http,$cookieStore) {
+	module.$get = ['$q','$http','$cookieStore','$filter', function ($q,$http,$cookieStore,$filter) {
 
 		var container = module.containers[0];
 
+		var zoneSyncTokens = {};
+
+		var saveSyncToken = function(zone,token) {
+		    zoneSyncTokens[zone] = token;
+		};
+
+		var getSavedSyncToken = function(zone) {
+		    return zoneSyncTokens[zone];
+		};
+
+		var shouldAppendRecords = false;
+
+		var recordResources = {};
+
+		module.getChanges = function(zoneName) {
+			// [path]/database/[version]/[container]/[environment]/private/records/changes
+			var authurl = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/private/records/changes?ckAPIToken="+container.api;
+			if(container.ckSession) {
+				authurl = authurl+"&ckSession="+encodeURIComponent(container.ckSession);
+			}
+			// ,{apnsEnvironment:'development'}
+
+			var zone = { zoneName: zoneName };
+
+			var postdata = {zoneID:zone,resultsLimit:10}; //,syncToken:,desiredKeys:
+
+			var savedSyncToken = getSavedSyncToken(zoneName);
+
+			if(savedSyncToken) {
+		        postdata.syncToken = savedSyncToken;
+		    } else {
+		        // If we don't have a syncToken we don't want to
+		        // append records to an existing list.
+		        shouldAppendRecords = false;
+		    }
+
+			var requestAuth = $http.post(authurl,postdata,{headers:{'Content-Type': undefined}});
+			requestAuth.success(function(response){
+				var syncToken = response.syncToken;
+	          	var records = response.records;
+	          	var moreComing = response.moreComing;
+
+				saveSyncToken(zoneName,syncToken);
+
+				// if(shouldAppendRecords) {
+
+		  //           // Append records to an existing list.
+		  //           forEach(records,function(record){
+		  //           	var match = $filter("filter")(Resources.records,function(existrecord){
+		  //           		return existrecord.record.recordName  == record.recordName;
+		  //           	},false);
+		  //           	if(match && match[0]) {
+		  //           		match[0].record = record;
+		  //           	} else {
+				//             Resources.records.push(new Resource({record:record}));
+				//             Resources.total++;
+				//         }
+			 //        });
+			 //        // console.log(records,Resource);
+		  //           // renderedRecords = appendRecords(records,syncToken,moreComing);
+
+		  //       } else {
+
+		            // Replace the existing list of records with a new one.
+		            // console.log(records,Resource);
+		            forEach(records,function(record){
+		            	var Resources = recordResources[record.recordType].Resources;
+		            	if(!Resources.records) {
+				            Resources.records = [];
+				        }
+		            	var Resource = recordResources[record.recordType].Resource;
+		            	var match = $filter("filter")(Resources.records,function(existrecord){
+		            		if(existrecord.record) {
+			            		return existrecord.record.recordName  == record.recordName;
+			            	}
+		            	},false);
+		            	if(match && match[0]) {
+		            		match[0].record = record;
+		            	} else {
+				            Resources.records.push(new Resource({record:record}));
+				            Resources.total++;
+				        }
+			        });
+		            // renderedRecords = renderRecords(zoneName,records,syncToken,moreComing);
+
+		        // }
+
+	         	// If there are more records to come, we will append the records instead
+	          	// of replacing them on the next run.
+	          	shouldAppendRecords = moreComing;
+	          	// if(moreComing) {
+	          	// 	module.getChanges(zoneName,Resources,Resource);
+	          	// }
+
+				// module.longpoll(result.webcourierURL);
+				// console.log(response);
+			}).error(function(error){
+				// console.log(error);
+				// if(error && error.redirectUrl) {
+				// 	window.open(error.redirectUrl);
+				// }
+			})
+		}
+
+		var zonewatchers = {};
+
+		module.lookupZone = function(recordName,zoneName,Resources,Resource) {
+			// [path]/database/[version]/[container]/[environment]/[database]/zones/lookup
+
+			recordResources[recordName] = {Resources:Resources,Resource:Resource};
+
+			if(!zonewatchers[zoneName]) {
+
+				var authurl = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/zones/lookup?ckAPIToken="+container.api;
+				if(container.ckSession) {
+					authurl = authurl+"&ckSession="+encodeURIComponent(container.ckSession);
+				}
+
+				var postdata = {zones:{zoneName:zoneName}};
+
+				var requestAuth = $http.post(authurl,postdata,{headers:{'Content-Type': undefined}});
+				requestAuth.success(function(response){
+					var zones = response.zones;
+					var zone = zones[0];
+					var syncToken = zone.syncToken;
+
+					saveSyncToken(zoneName,syncToken);
+					module.notifications();
+				});
+				zonewatchers[zoneName] = true;
+			}
+		}
+
 		module.longpoll = function(url) {
 			$http.get(url).success(function(result){
-				console.log(result);
+				// console.log(result);
+				if(result.ck.qry.zid!='_defaultZone') {
+					module.getChanges(result.ck.qry.zid);
+				}
 				module.longpoll(url);
 			}).error(function(err){
-				console.log(err);
+				// console.log(err);
 			});
+		}
+
+		module.registerToken = function(tokeninfo) {
+			// [path]/database/[version]/[container]/[environment]/tokens/register
+			var authurl = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/tokens/register?ckAPIToken="+container.api;
+			if(container.ckSession) {
+				authurl = authurl+"&ckSession="+encodeURIComponent(container.ckSession);
+			}
+			// ,{apnsEnvironment:'development'}
+			var requestAuth = $http.post(authurl,{apnsToken:tokeninfo.apnsToken,apnsEnvironment:tokeninfo.apnsEnvironment},{headers:{'Content-Type': undefined}});
+			requestAuth.success(function(result){
+				// module.longpoll(result.webcourierURL);
+				// console.log(result);
+			}).error(function(error){
+				// console.log(error);
+				// if(error && error.redirectUrl) {
+				// 	window.open(error.redirectUrl);
+				// }
+			})
 		}
 
 		module.notifications = function() {
@@ -61,10 +271,11 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 			// ,{apnsEnvironment:'development'}
 			var requestAuth = $http.post(authurl,{},{headers:{'Content-Type': undefined}});
 			requestAuth.success(function(result){
+				// module.registerToken(result);
 				module.longpoll(result.webcourierURL);
-				console.log(result);
+				// console.log(result);
 			}).error(function(error){
-				console.log(result);
+				// console.log(error);
 				// if(error && error.redirectUrl) {
 				// 	window.open(error.redirectUrl);
 				// }
@@ -73,18 +284,18 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 
 		module.subscription = function() {
 
-			container.database = 'public';
+			// container.database = 'public';
 			var authurl = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/subscriptions/modify?ckAPIToken="+container.api;
 			if(container.ckSession) {
 				authurl = authurl+"&ckSession="+encodeURIComponent(container.ckSession);
 			}
 			// ,{apnsEnvironment:'development'}
-			var requestAuth = $http.post(authurl,{operations:[{operationType:'create',subscription:{zoneID:{zoneName:'_defaultZone'},subscriptionType:'query',query:{recordType:'Bookmarks'},firesOn:'create',zoneWide:false}}]},{headers:{'Content-Type': undefined}});
+			var requestAuth = $http.post(authurl,{operations:[{operationType:'create',subscription:{zoneID:{zoneName:'bookmarksZone'},subscriptionType:'query',query:{recordType:'Bookmarks'},firesOn:['create','update','delete'],zoneWide:false}}]},{headers:{'Content-Type': undefined}});
 			requestAuth.success(function(result){
-				module.longpoll(result.webcourierURL);
-				console.log(result);
+				// module.longpoll(result.webcourierURL);
+				// console.log(result);
 			}).error(function(error){
-				console.log(result);
+				console.log(error);
 				// if(error && error.redirectUrl) {
 				// 	window.open(error.redirectUrl);
 				// }
@@ -96,7 +307,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 			if(cloudCookie) {
 				container.ckSession = cloudCookie;
 			}
-			container.database = 'public';
+			// container.database = 'public';
 			var authurl = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/users/current?ckAPIToken="+container.api;
 			if(container.ckSession) {
 				authurl = authurl+"&ckSession="+encodeURIComponent(container.ckSession);
@@ -105,14 +316,13 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 			requestAuth.success(function(result){
 				// console.log(result);
 				module.subscription();
-				module.notifications();
 			}).error(function(error){
 				if(error && error.redirectUrl) {
 					window.open(error.redirectUrl);
 				}
 			})
 			window.addEventListener('message', function(e) {
-				console.log(e.data.ckSession);
+				// console.log(e.data.ckSession);
 			    if(e.data.ckSession) {			    	
 			    	$cookieStore.put(container.container,e.data.ckSession);
 				    container.ckSession = e.data.ckSession;
@@ -122,9 +332,70 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 			return requestAuth;
 		}
 
+		module.uploadFile = function(filename,filedata,recordName,zoneName,record) {
+
+			var authurl = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/assets/upload?ckAPIToken="+container.api;
+			if(container.ckSession) {
+				authurl = authurl+"&ckSession="+encodeURIComponent(container.ckSession);
+			}
+			var tokens = [{
+		      "recordType": recordName,
+		      "fieldName": filename
+		    }];
+
+			var requestAuth = $http.post(authurl,{tokens:tokens,zoneID:{zoneName:zoneName}},{headers:{'Content-Type': undefined}});
+			requestAuth.success(function(result){
+				forEach(result.tokens,function(token){
+					var fd = new FormData();
+					console.log(filedata);
+					var newfiledata = dataURItoBlob(filedata);
+					console.log(newfiledata);
+			        fd.append('file', newfiledata,filename);
+			        $http.post(token.url, fd, {transformRequest: angular.identity,headers: {'Content-Type': undefined}}).success(function(fileresponse){
+			        	var url = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/records/modify?ckAPIToken="+container.api;
+			        	if(container.ckSession) {
+							url = url+"&ckSession="+encodeURIComponent(container.ckSession);
+						}
+			        	var fields = {};
+			        	fields[filename] = {value:fileresponse.singleFile};
+			        	// console.log(record);
+			        	var data = {zoneID:{zoneName:zoneName},operations:[{operationType:'update',record:{recordType:recordName,fields:fields,recordName:record.recordName,recordChangeTag:record.recordChangeTag}}]};
+			        	$http.post(url, data, {headers:{'Content-Type': undefined}}).success(function(fileupdateresponse){
+			        		console.log(fileupdateresponse);
+				        });
+			        });
+				});
+				// module.subscription();
+			}).error(function(error){
+				if(error && error.redirectUrl) {
+					window.open(error.redirectUrl);
+				}
+			})
+		}
+
 		module.auth();
 
-	    function cloudFactory(recordName,fields, actions) {
+		// function Route(template, defaults) {
+	 //        this.template = template;
+	 //        this.defaults = extend({}, module.defaults, defaults);
+	 //        this.urlParams = {};
+  //     	}
+
+	    function cloudFactory(recordName,zoneName,paramDefaults, actions, options) {
+	    	// var route = new Route(recordName, options);
+
+	    	actions = extend({}, module.defaults.actions, actions);
+
+	    	function extractParams(data, actionParams) {
+	          var ids = {};
+	          actionParams = extend({}, paramDefaults, actionParams);
+	          forEach(actionParams, function(value, key) {
+	            if (isFunction(value)) { value = value(); }
+	            ids[key] = value && value.charAt && value.charAt(0) == '@' ?
+	              lookupDottedPath(data, value.substr(1)) : value;
+	          });
+	          return ids;
+	        }
 
 	    	function defaultResponseInterceptor(response) {
 		        return response.resource;
@@ -140,7 +411,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 
 				Resource[name] = function(a1, a2, a3, a4) {
 
-					console.log(a1, a2, a3, a4);
+					// console.log(a1, a2, a3, a4);
 
 					var params = {}, data, success, error;
 
@@ -183,7 +454,8 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 			        // console.log(params, data, success, error);
 
 					var isInstanceCall = this instanceof Resource;
-					var value = isInstanceCall ? data : (action.isArray ? [] : new Resource(data));
+					var records = data.records ? data.records : [];
+					var value = isInstanceCall ? data : (action.isArray ? new Resource({records:records}) : new Resource(data));
 					var httpConfig = {};
 
 					var responseInterceptor = action.interceptor && action.interceptor.response ||
@@ -198,41 +470,77 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 			            }
 			        });
 
-			        console.log(data);
+			        
 
 			        // data['records'] = {'recordName':recordName,'desiredKeys':fields};
 
-			        if (hasBody) httpConfig.data = data;
+			        if (hasBody) { 
+			        	httpConfig.data = copy(data);
+
+				        var params = extend({}, extractParams(data, action.params || {}), params);// extractParams(data, action.params || {});
+
+				        forEach(params, function(value, key) {
+				            // if (!self.urlParams[key]) {
+				              	httpConfig.data = httpConfig.data || {};
+				              	httpConfig.data[key] = value;
+				            // }
+				        });
+
+				    }
+
+			        // console.log(data,params);
+
+			        // console.log(data,httpConfig);
+			        // return;
+
+			        var assets = [];
 
 			        httpConfig.headers = {'Content-Type': undefined};
 			        if(name == "query") {
+			        	value.query = httpConfig.data.query;
+			        	value.resultsLimit = httpConfig.data.resultsLimit;
 			        	httpConfig.url = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/records/query?ckAPIToken="+container.api;
 			        } else if(name == "get") {
 				        httpConfig.url = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/records/lookup?ckAPIToken="+container.api;
 				    } else if(name == "save") {
 				        httpConfig.url = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/records/modify?ckAPIToken="+container.api;
-				        if(!httpConfig.data.operations.record) {
-					        httpConfig.data.operations = {operationType:'update',record:data.record};
+				        console.log(value,data);
+				        if(!data.record || !data.record.recordName) {
+					    	httpConfig.data.operations = [{operationType:'create',record:{recordType:recordName,fields:data}}];
+					    	forEach(data,function(datavalue,key){
+					    		// console.log(key,value);
+					    		delete httpConfig.data[key];
+					    	});
+					    } else if(data.record && ((httpConfig.data.operations && !httpConfig.data.operations.record) || !httpConfig.data.operations)) {
+					    	forEach(data.record.fields,function(fieldvalue,key){
+					    		if(fieldvalue.asset) {
+					    			assets.push({key:key,value:fieldvalue.value});
+					    			delete data.record.fields[key];
+					    		}
+					    	});
+					        httpConfig.data.operations = [{operationType:'update',record:data.record}];
 					        delete httpConfig.data.record;
+					    } else if(data.records && ((httpConfig.data.operations && !httpConfig.data.operations[0].record) || !httpConfig.data.operations)) {
+					    	httpConfig.data.operations = [];
+					    	forEach(data.records,function(record){
+					    		httpConfig.data.operations.push({operationType:'update',record:record.record});
+					    	});
+					        delete httpConfig.data.records;
 					    }
 				    }
 			        if(container.ckSession) {
 						httpConfig.url = httpConfig.url+"&ckSession="+encodeURIComponent(container.ckSession);
 					}
 
-					console.log(httpConfig);
-			        									  // [path]/database/[version]/[container]/[environment]/[database]/records/query
+					httpConfig.data.zoneID = {zoneName:zoneName};
+
 			        var promise = $http(httpConfig).then(function (response) {
-			        	var data = response.data,
-			              promise = value.$promise;
+			        	var data = response.data, promise = value.$promise;
 
 			            if (data) {
 			              // Need to convert action.isArray to boolean in case it is undefined
 			              // jshint -W018
-			              if(name == "query") {
-			              	data = data.records;
-			              }
-			              if (angular.isArray(data) !== (!!action.isArray)) {
+			              if (name == "query" && data.records && angular.isArray(data.records) !== (!!action.isArray)) {
 			                throw $resourceMinErr('badcfg',
 			                    'Error in resource configuration. Expected ' +
 			                    'response to contain an {0} but got an {1}',
@@ -241,27 +549,84 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 			              }
 			              // jshint +W018
 			              if (action.isArray) {
-			                value.length = 0;
+			                // value.records.length = 0;
+			                value.total = data.total;
+			                value.continuationMarker = data.continuationMarker;
 			                // console.log(data);
-			                forEach(data, function (item) {
-			                  if (typeof item === "object") {
-			                    value.push(new Resource({record:item}));
-			                  } else {
-			                    // Valid JSON values may be string literals, and these should not be converted
-			                    // into objects. These items will not have access to the Resource prototype
-			                    // methods, but unfortunately there
-			                    value.push(item);
-			                  }
+			                forEach(data.records, function (item) {
+			                	// console.log(item);
+			                	
+			                	if (typeof item === "object") {
+				                    value.records.push(new Resource({record:item}));
+				                } else {
+				                    // Valid JSON values may be string literals, and these should not be converted
+				                    // into objects. These items will not have access to the Resource prototype
+				                    // methods, but unfortunately there
+				                    value.records.push(item);
+			                  	}
 			                });
 			              } else {
 			              	if(name == "get" || name == "save") {
-			              		data.record = data.records[0];
-			              		delete data.records;
+			              		if(data.records[0].serverErrorCode) {
+
+			              			// console.log(data,value);
+
+			              			value.$resolved = true;
+
+			              			// var reason = data.records[0].reason;
+
+			              			(error||noop)(response);
+
+			              			// console.log(this);
+
+			              			return $q.reject(response);
+			              			// if(httpConfig.data.operations && httpConfig.data.operations.record) {
+				              		// 	data.record = httpConfig.data.operations.record;
+				              		// }
+			              			// // delete data.records;
+
+			              			// shallowClearAndCopy(data, value);
+
+			              			// value.$resolved = true;
+
+						            // response.resource = value;
+
+						            // console.log(data,value);
+
+						            // return response;
+					        		// return $q.reject(reason);;
+					        	}
+
+					        	// console.log(value);
+
+					        	if(value.records) {
+					        		var records = copy(data.records);
+					        		data.records = [];
+					        		data.total = value.total;
+					        		data.query = value.query;
+					                data.continuationMarker = value.continuationMarker;
+
+					        		forEach(records,function(record){
+					        			data.records.push(new Resource({record:record}));
+					        		});
+				              		// delete data.records;
+					        	} else {
+					        		data.record = data.records[0];
+					        		forEach(assets,function(asset){
+					        			console.log(asset.value);
+					        			module.uploadFile(asset.key,asset.value,recordName,zoneName,data.record);
+					        		});
+				              		delete data.records;
+					        	}
 			              	}
 			                shallowClearAndCopy(data, value);
 			                value.$promise = promise;
 			              }
 			            }
+
+			            if (name == "query") {
+				            module.lookupZone(recordName,zoneName,value,Resource);
+				        }
 
 			            value.$resolved = true;
 
@@ -307,8 +672,10 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 		        };
 	        });
 
+			// console.log(this);
+
 			Resource.bind = function(additionalParamDefaults){
-		        return resourceFactory(url, extend({}, paramDefaults, additionalParamDefaults), actions);
+		        return resourceFactory(recordName, zoneName, extend({}, paramDefaults, additionalParamDefaults), actions);
 		    };
 
 			return Resource;
