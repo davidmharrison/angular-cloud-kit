@@ -470,7 +470,11 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 			            }
 			        });
 
+<<<<<<< Updated upstream
 			        
+=======
+			        // console.log(data);
+>>>>>>> Stashed changes
 
 			        // data['records'] = {'recordName':recordName,'desiredKeys':fields};
 

@@ -6,6 +6,7 @@ cloudApp.controller("MainController",['$scope','$cloudKit','Bookmark','UserBookm
 	// var container = $cloudKit();
 	// container.auth()
 	// console.log();
+<<<<<<< Updated upstream
 	UserBookmarkLU.query({zoneID:{zoneName:"bookmarksZone"},resultsLimit:10,query:{recordType:'UserBookmarkLU'}},function(result){
 		console.log("page1",result);
 	});
@@ -38,6 +39,25 @@ cloudApp.controller("MainController",['$scope','$cloudKit','Bookmark','UserBookm
 
 	// ,filterBy:[{comparator:'BEGINS_WITH',fieldName:'title',fieldValue:{value:'EU'}}]
   var bookmarks = Bookmark.query({zoneID:{zoneName:"bookmarksZone"},resultsLimit:10,query:{recordType:'Bookmarks'}},function(result){
+=======
+  var bookmarks = Bookmark.get({records:{recordName:"B4B43726-1CA6-4F60-BCEC-932A9610CEAD"}},function(result){
+    // console.log(result);
+
+    $scope.bookmark = result;
+
+    // result.record.fields.title.value = "EU Title";
+    // result.$save(function(postres){
+      // console.log(result,postres);  
+    // });
+    // console.log(result);
+    // result.$save({fields:[{title:{value:'EU Updated Title'}}]});
+    // Bookmark.save({operations:[{operationType:'update',record:{recordType:'Bookmarks',recordName:'B4B43726-1CA6-4F60-BCEC-932A9610CEAD',recordChangeTag:result.recordChangeTag}}]},function(result){
+    //   console.log(result);
+    // });
+  });
+  // ,filterBy:[{comparator:'BEGINS_WITH',fieldName:'title',fieldValue:{value:'EU'}}]
+  var bookmarks = Bookmark.query({zoneID:{zoneName:"_defaultZone"},resultsLimit:10,query:{recordType:'Bookmarks'}},function(result){
+>>>>>>> Stashed changes
       $scope.bookmarks = result;
       console.log("page1",result);
       // Bookmark.query({zoneID:{zoneName:"_defaultZone"},continuationMarker:result.continuationMarker,resultsLimit:10,query:{recordType:'Bookmarks'}},function(result1){
