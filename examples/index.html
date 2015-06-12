@@ -3,6 +3,7 @@
 <head>
 	<!-- Latest compiled and minified CSS -->
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+	<link href="style.css" rel="stylesheet" />
 	<title>CloudKit Module</title>
 </head>
 <body>
@@ -10,16 +11,60 @@
 		<!-- Hello World! -->
 		<!-- <div cloud-kit-auth></div> -->
 		<!-- <div id="username"></div> -->
-		<p>{{bookmarks.records.length}} /{{bookmarks.total}}</p>
+		<!-- <p>{{posts.records.length}} /{{posts.total}}</p> -->
+		<h1>
+			Blog
+		</h1>
 		<div class="row">
 			<div class="col-md-8">
-				<div class="table-responsive">
+				<div class="posts">
+					<div class="post" ng-repeat="post in posts.records">
+						<div class="images" ng-if="post.record.fields.content.value.image.value">
+							<div class="image" ng-repeat="image in post.record.fields.content.value.image.value">
+								<img ng-src="{{image.image.value.downloadURL}}">
+							</div>
+						</div>
+						<div class="header">
+							<br>
+						</div>
+						<div class="links">
+							<div class="link" ng-repeat="link in post.record.fields.content.value.link.value">
+								<div class="source">
+									<a ng-href="{{link.url.value}}">
+										{{link.url.value}}
+									</a>
+								</div>
+								<a ng-href="{{link.url.value}}">
+									{{link.title.value}}
+								</a>
+								<a ng-href="{{link.url.value}}">
+									{{link.descirption.value}}
+								</a>
+							</div>
+						</div>
+						<div class="body">
+							<h2>{{post.record.fields.title.value}}</h2>
+							<!-- <h2>{{post.created.timestamp}}</h2>
+							<h3>{{post.modified.timestamp}}</h3>
+							<h3>{{post.record.fields.type.value.type.value}}</h3> -->
+							<div class="text" ng-if="post.record.fields.content.value.text.value" ng-bind-html="post.record.fields.content.value.text.value | to_trusted"></div>
+						</div>
+						<div class="footer">
+							<div class="comments">
+								<a href="{post.record.fields.url.value}"><strong>{{post.record.fields.comments.value.length || 0}} Comments</strong></a>
+							</div>
+							<p><a ng-href="{{post.record.fields.url.value}}">Permalink</a></p>
+						</div>
+						<hr>
+					</div>
+				</div>
+				<!-- <div class="table-responsive">
 					<table class="table table-bordered">
 						<thead>
 							<tr><th>Title</th><th>Title</th><th>Text</th><th>URL</th><th>Save</th></tr>
 						</thead>
 						<tbody>
-							<tr ng-repeat="bookmark in bookmarks.records">
+							<tr ng-repeat="bookmark in posts.records">
 								<td>
 									<a ng-href="{{bookmark.record.fields.url.value}}">{{bookmark.record.fields.title.value}}</a>
 								</td>
@@ -40,21 +85,43 @@
 						</tbody>
 					</table>
 				</div>
-				<button class="btn btn-success btn-block"  ng-show="bookmarks.records.length < bookmarks.total" ng-click="bookmarks.$query()">Load More</button>
+				<button class="btn btn-success btn-block"  ng-show="posts.records.length < posts.total" ng-click="posts.$query()">Load More</button>
 				<hr>
-				<button class="btn btn-success btn-block" ng-click="saveAll()">Save All</button>
+				<button class="btn btn-success btn-block" ng-click="saveAll()">Save All</button> -->
 			</div>
 			<div class="col-md-4">
 				<form>
 					<div class="form-group">
-						<label></label>
-						<input placeholder="Title" class="form-control" ng-model="newbookmark.fields.title.value">
+						<label>Title</label>
+						<input placeholder="Title" class="form-control" ng-model="newpost.fields.title.value">
+					</div>
+					<!-- <div class="form-group">
+						<label>Type</label>
+						<text></text>
+					</div> -->
+					<div class="form-group">
+						<label>URL</label>
+						<input placeholder="URL" ng-blur="checkURL(newpost.fields.content.link)" class="form-control" ng-model="newpost.fields.content.link.url.value">
+						<input ng-show="newpost.fields.content.link.title" placeholder="Title" class="form-control" ng-model="newpost.fields.content.link.title.value">
+						<input ng-show="newpost.fields.content.link.title" placeholder="Description" class="form-control" ng-model="newpost.fields.content.link.description.value">
 					</div>
 					<div class="form-group">
-						<label></label>
-						<input placeholder="URl" class="form-control" ng-model="newbookmark.fields.url.value">
+						<label>Text</label>
+						<textarea placeholder="Text" class="form-control" ng-model="newpost.fields.content.text.value"></textarea>
 					</div>
-					<button class="btn btn-success" ng-click="addBookmark(newbookmark)">New Bookmark</button>
+					<div class="form-group">
+						<label>Images</label>
+						<input class="form-control" type="file" multiple ng-model="newpost.fields.content.image.image.value" app-filereader>
+					</div>
+					<div class="form-group">
+						<label>Allow Comments</label>
+						<input type="checkbox" ng-true-value="1" ng-false-value="0" class="" ng-model="newpost.fields.allow_comments.value">
+					</div>
+					<!-- <div class="form-group">
+						<label>Tags</label>
+						<input placeholder="Text" type="checbox" ng-true-value="1" ng-false-value="0" class="form-control" ng-model="newbookmark.fields.allow_comments.value">
+					</div> -->
+					<button class="btn btn-success" ng-click="newPost(newpost)">New Post</button>
 				</form>
 			</div>
 		</div>
@@ -64,6 +131,7 @@
 	</div>
 	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.16/angular.min.js"></script>
 	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.3.16/angular-cookies.min.js"></script>
+	<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
 	<script src="angular-cloud-kit.js"></script>
 	<script src="app.js"></script>

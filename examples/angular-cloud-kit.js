@@ -63,7 +63,35 @@ function dataURItoBlob(dataURI) {
     return new Blob([ia], {type:mimeString});
 }
 
-var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', function() {
+function Model($injector) {
+	var ModelFactory = {};
+
+	ModelFactory.belongsTo = function(model, options) {
+		// console.log(model,);
+		// this.sibling = model;
+		this.many = false;
+		this.model = model;
+		return this;
+	}
+
+	ModelFactory.hasMany = function(model, options) {
+		this.many = true;
+		this.model = model;
+		return this;
+	}
+
+	ModelFactory.attr = function(attr) {
+
+	}
+
+	return ModelFactory;
+
+	// this.$get = ['$rootScope','$injector', function($rootScope,$injector) {
+	// 	return $injector.invoke(factory);
+	// }];
+}
+
+var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).provider('$cloudKit', function() {
 	var module          = this;
 	var provider = this;
 
@@ -95,7 +123,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
         return this;
     };
 
-	module.$get = ['$q','$http','$cookieStore','$filter', function ($q,$http,$cookieStore,$filter) {
+	module.$get = ['$q','$http','$cookieStore','$filter','$injector', function ($q,$http,$cookieStore,$filter,$injector) {
 
 		var container = module.containers[0];
 
@@ -232,6 +260,36 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 			}
 		}
 
+		module.createZone = function(zoneName) {
+			// [path]/database/[version]/[container]/[environment]/[database]/zones/lookup
+
+			// recordResources[recordName] = {Resources:Resources,Resource:Resource};
+
+			// if(!zonewatchers[zoneName]) {
+
+				var authurl = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/zones/modify?ckAPIToken="+container.api;
+
+				if(container.ckSession) {
+					authurl = authurl+"&ckSession="+encodeURIComponent(container.ckSession);
+				}
+
+				var postdata = {operations:[{operationType:'create',zone:{zoneID:{zoneName:zoneName}}}]};
+
+				var requestAuth = $http.post(authurl,postdata,{headers:{'Content-Type': undefined}});
+				requestAuth.success(function(response){
+					console.log(response);
+
+					// var zones = response.zones;
+					// var zone = zones[0];
+					// var syncToken = zone.syncToken;
+
+					// saveSyncToken(zoneName,syncToken);
+					// module.notifications();
+				});
+				// zonewatchers[zoneName] = true;
+			// }
+		}
+
 		module.longpoll = function(url) {
 			$http.get(url).success(function(result){
 				// console.log(result);
@@ -264,12 +322,12 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 		}
 
 		module.notifications = function() {
-			var authurl = "https://api.apple-cloudkit.com/device/1/"+container.container+"/development/tokens/create?ckAPIToken="+container.api;
+			var authurl = "https://api.apple-cloudkit.com/device/1/"+container.container+"/"+container.environment+"/tokens/create?ckAPIToken="+container.api;
 			if(container.ckSession) {
 				authurl = authurl+"&ckSession="+encodeURIComponent(container.ckSession);
 			}
 			// ,{apnsEnvironment:'development'}
-			var requestAuth = $http.post(authurl,{},{headers:{'Content-Type': undefined}});
+			var requestAuth = $http.post(authurl,{apnsEnvironment:container.environment},{headers:{'Content-Type': undefined}});
 			requestAuth.success(function(result){
 				// module.registerToken(result);
 				module.longpoll(result.webcourierURL);
@@ -308,14 +366,15 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 				container.ckSession = cloudCookie;
 			}
 			// container.database = 'public';
-			var authurl = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/users/current?ckAPIToken="+container.api;
+			var authurl = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/public/users/current?ckAPIToken="+container.api;
 			if(container.ckSession) {
 				authurl = authurl+"&ckSession="+encodeURIComponent(container.ckSession);
 			}
 			var requestAuth = $http.get(authurl);
 			requestAuth.success(function(result){
 				// console.log(result);
-				module.subscription();
+				// module.createZone("blogsZone");
+				// module.subscription();
 			}).error(function(error){
 				if(error && error.redirectUrl) {
 					window.open(error.redirectUrl);
@@ -332,7 +391,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 			return requestAuth;
 		}
 
-		module.uploadFile = function(filename,filedata,recordName,zoneName,record) {
+		module.uploadFile = function(filename,filedata,recordName,zoneName) {
 
 			var authurl = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/assets/upload?ckAPIToken="+container.api;
 			if(container.ckSession) {
@@ -343,34 +402,48 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 		      "fieldName": filename
 		    }];
 
-			var requestAuth = $http.post(authurl,{tokens:tokens,zoneID:{zoneName:zoneName}},{headers:{'Content-Type': undefined}});
-			requestAuth.success(function(result){
-				forEach(result.tokens,function(token){
+			var requestAuth = $http.post(authurl,{tokens:tokens,zoneID:{zoneName:zoneName}},{headers:{'Content-Type': undefined}})
+			var pFiles = [];
+			return requestAuth.then(function(result){
+				// console.log(result);
+				forEach(result.data.tokens,function(token){
 					var fd = new FormData();
 					console.log(filedata);
 					var newfiledata = dataURItoBlob(filedata);
-					console.log(newfiledata);
+					// console.log(newfiledata);
 			        fd.append('file', newfiledata,filename);
-			        $http.post(token.url, fd, {transformRequest: angular.identity,headers: {'Content-Type': undefined}}).success(function(fileresponse){
-			        	var url = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/records/modify?ckAPIToken="+container.api;
-			        	if(container.ckSession) {
-							url = url+"&ckSession="+encodeURIComponent(container.ckSession);
-						}
-			        	var fields = {};
-			        	fields[filename] = {value:fileresponse.singleFile};
-			        	// console.log(record);
-			        	var data = {zoneID:{zoneName:zoneName},operations:[{operationType:'update',record:{recordType:recordName,fields:fields,recordName:record.recordName,recordChangeTag:record.recordChangeTag}}]};
-			        	$http.post(url, data, {headers:{'Content-Type': undefined}}).success(function(fileupdateresponse){
-			        		console.log(fileupdateresponse);
-				        });
+			        var uplodaPromise = $http.post(token.url, fd, {transformRequest: angular.identity,headers: {'Content-Type': undefined}}).success(function(imageupload){
+			        	// console.log(imageupload);
+				        return imageupload;
+			        // pFiles.push(imageuploadPromise.then(function(fileresponse){
+			        	// return fileresponse;
+			   //      	var url = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/records/modify?ckAPIToken="+container.api;
+			   //      	if(container.ckSession) {
+						// 	url = url+"&ckSession="+encodeURIComponent(container.ckSession);
+						// }
+			   //      	var fields = {};
+			   //      	fields[filename] = {value:fileresponse.singleFile};
+			   //      	// console.log(record);
+			   //      	var data = {zoneID:{zoneName:zoneName},operations:[{operationType:'update',record:{recordType:recordName,fields:fields,recordName:record.recordName,recordChangeTag:record.recordChangeTag}}]};
+			   //      	$http.post(url, data, {headers:{'Content-Type': undefined}}).success(function(fileupdateresponse){
+			   //      		console.log(fileupdateresponse);
+				  //       });
 			        });
+					pFiles.push(uplodaPromise);
+			        // imageuploadPromise);
 				});
+				return $q.all(pFiles);
+				// .then(function(uploadedFiles) {
+				// 	return uploadedFiles;
+				// });
 				// module.subscription();
-			}).error(function(error){
-				if(error && error.redirectUrl) {
-					window.open(error.redirectUrl);
-				}
-			})
+			});
+			
+			// .error(function(error){
+			// 	if(error && error.redirectUrl) {
+			// 		window.open(error.redirectUrl);
+			// 	}
+			// })
 		}
 
 		module.auth();
@@ -381,8 +454,10 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 	 //        this.urlParams = {};
   //     	}
 
-	    function cloudFactory(recordName,zoneName,paramDefaults, actions, options) {
+	    function cloudFactory(recordName,zoneName,model,paramDefaults, actions, options) {
 	    	// var route = new Route(recordName, options);
+
+	    	// console.log(model);
 
 	    	actions = extend({}, module.defaults.actions, actions);
 
@@ -496,153 +571,381 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).provider('$cloudKit', f
 			        var assets = [];
 
 			        httpConfig.headers = {'Content-Type': undefined};
-			        if(name == "query") {
-			        	value.query = httpConfig.data.query;
-			        	value.resultsLimit = httpConfig.data.resultsLimit;
-			        	httpConfig.url = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/records/query?ckAPIToken="+container.api;
-			        } else if(name == "get") {
-				        httpConfig.url = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/records/lookup?ckAPIToken="+container.api;
-				    } else if(name == "save") {
-				        httpConfig.url = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/records/modify?ckAPIToken="+container.api;
-				        console.log(value,data);
-				        if(!data.record || !data.record.recordName) {
-					    	httpConfig.data.operations = [{operationType:'create',record:{recordType:recordName,fields:data}}];
-					    	forEach(data,function(datavalue,key){
-					    		// console.log(key,value);
-					    		delete httpConfig.data[key];
-					    	});
-					    } else if(data.record && ((httpConfig.data.operations && !httpConfig.data.operations.record) || !httpConfig.data.operations)) {
-					    	forEach(data.record.fields,function(fieldvalue,key){
-					    		if(fieldvalue.asset) {
-					    			assets.push({key:key,value:fieldvalue.value});
-					    			delete data.record.fields[key];
-					    		}
-					    	});
-					        httpConfig.data.operations = [{operationType:'update',record:data.record}];
-					        delete httpConfig.data.record;
-					    } else if(data.records && ((httpConfig.data.operations && !httpConfig.data.operations[0].record) || !httpConfig.data.operations)) {
-					    	httpConfig.data.operations = [];
-					    	forEach(data.records,function(record){
-					    		httpConfig.data.operations.push({operationType:'update',record:record.record});
-					    	});
-					        delete httpConfig.data.records;
-					    }
-				    }
-			        if(container.ckSession) {
-						httpConfig.url = httpConfig.url+"&ckSession="+encodeURIComponent(container.ckSession);
+
+			        function checkSub(httpConfig) {
+			        	return $q(function(resolve, reject) {
+					        if(name == "query") {
+					        	value.query = httpConfig.data.query;
+					        	value.resultsLimit = httpConfig.data.resultsLimit;
+
+					        	var query = extend({}, {recordType: recordName}, params.query);
+
+					        	httpConfig.data.query = query;
+					        	httpConfig.data.zoneID = {zoneName: zoneName};
+					        	// console.log(httpConfig.data);
+					        	httpConfig.url = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/records/query?ckAPIToken="+container.api;
+					        	resolve(httpConfig);
+					        } else if(name == "get") {
+						        httpConfig.url = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/records/lookup?ckAPIToken="+container.api;
+						        resolve(httpConfig);
+						    } else if(name == "save") {
+						        httpConfig.url = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/records/modify?ckAPIToken="+container.api;
+						     //    if(data.link) {
+							    //     console.log(value,data,model);
+							    //     return;
+							    // }
+
+						        if(!data.record || !data.record.recordName) {
+						        	console.log(model);
+						        	// data.map()
+
+						        	var pFiles = [];
+
+						        	// var subCheckModel = 
+
+						        	forEach(data,function(fieldvalue,key){
+						        		// console.log(fieldvalue,key);
+						        		// if(angular.isArray(fieldvalue)) {
+						        		// 	forEach(fieldvalue,function(childrec){
+						        		// 		forEach(childrec,subCheckModel);
+						        		// 	});
+						        		// }
+							        	// else 
+							        	if(model[key] && model[key].model instanceof Function) {
+							        		var newSubModel = new model[key].model(fieldvalue);
+							        		// console.log(newSubModel);
+							        		// console.log(fieldvalue,key,model,model[key]);
+							        		var newSubModPromise = newSubModel.$save(fieldvalue).then(function(newmodelresult){
+							        			if(model[key].many) {
+							        				if(!data[key]) {
+							        					data[key] = {value:[]};
+							        				}
+							        				if(!data[key].value) {
+							        					data[key].value = [];
+							        				}
+							        				data[key].value.push({recordName:newmodelresult.record.recordName,zoneID:{zoneName:zoneName},action:"NONE"});
+							        			} else {
+								        			data[key] = {value:{recordName:newmodelresult.record.recordName,zoneID:{zoneName:zoneName},action:"NONE"}};
+								        		}
+							        			return newmodelresult.record.recordName;
+							        			// console.log(data);
+							        		});
+							        		delete data[key];
+							        		pFiles.push(newSubModPromise);
+							        		// console.log(subpromise);
+							        		// pFiles.push(
+							        		// newChildpromise.then(function(response) {
+							        		// 	data[key].value = response;
+							        		// 	// console.log(data[key]);
+							        		// 	return data;
+							        		// });
+							        		// pFiles.push(newChildpromise);
+							        		// console.log(data[key]);
+							        		// newChildpromise = newChildpromise.then(function(response) {
+							        		// 	data[key] = newRecordName;
+								         //    });
+								         //    return newChildpromise;
+							        		// console.log(data,newRecordName);
+							        		// delete data[key];
+							    			// console.log(model[key],fieldvalue);
+							    		} else {
+							    			if(model[key] == 'file') {
+							        			// forEach(assets,function(asset){
+							        			// console.log(fieldvalue);
+							        			if(angular.isArray(fieldvalue.value)) {
+							        				forEach(fieldvalue.value,function(file){
+							        					// console.log(key,file);
+								        				var filePromise = module.uploadFile(key,file,recordName,zoneName);
+										        		// console.log(filePromise);
+										        		var newPromise = filePromise.then(function(fileresult){
+										        			console.log(fileresult);
+										        			data[key] = {value:fileresult[0].data.singleFile};
+										        			return fileresult[0].data.singleFile;
+										        			// resolve(httpConfig);
+										        		});
+										        		delete data[key];
+										        		pFiles.push(newPromise);
+										        	});
+							        			} else {
+							        				// console.log(key,fieldvalue.value,recordName,zoneName);
+									        		var filePromise = module.uploadFile(key,fieldvalue.value,recordName,zoneName);
+									        		// console.log(filePromise);
+									        		var newPromise = filePromise.then(function(fileresult){
+									        			console.log(data[key],data,key,fileresult[0].data.singleFile);
+									        			data[key] = {value:fileresult[0].data.singleFile};
+									        			return fileresult[0].data.singleFile;
+									        			// resolve(httpConfig);
+									        		});
+									        		delete data[key];
+									        		pFiles.push(newPromise);
+									        	}
+								        		// });
+							        		}
+							    		}
+							    	});
+
+									var configurepromise = $q.all(pFiles).then(function(uploadedFiles) {
+										console.log(uploadedFiles);
+										if(angular.isArray(uploadedFiles) && uploadedFiles.length > 1) {
+											httpConfig.data.operations = [];
+											forEach(uploadedFiles,function(file){
+												var data = {};
+												data['image'] = {value:file};
+												// console.log(file);
+												httpConfig.data.operations.push({operationType:'create',record:{recordType:recordName,fields:data}});
+												// forEach(data,function(datavalue,key){
+										  //   		// console.log(key,value);
+										  //   		delete httpConfig.data[key];
+										  //   	});
+											});
+										} else {
+									    	httpConfig.data.operations = [{operationType:'create',record:{recordType:recordName,fields:data}}];
+									    	forEach(data,function(datavalue,key){
+									    		// console.log(key,value);
+									    		delete httpConfig.data[key];
+									    	});
+									    }
+								    	// return true;
+								    	resolve(httpConfig);
+								    });
+								    return configurepromise;
+								    // console.log(configurepromise);
+							    } else if(data.record && ((httpConfig.data.operations && !httpConfig.data.operations.record) || !httpConfig.data.operations)) {
+							    	console.log(model);
+							    	// forEach(data.record.fields,function(fieldvalue,key){
+							    	// 	if(fieldvalue.asset) {
+							    	// 		assets.push({key:key,value:fieldvalue.value});
+							    	// 		delete data.record.fields[key];
+							    	// 	}
+							    	// });
+							        httpConfig.data.operations = [{operationType:'update',record:data.record}];
+							        delete httpConfig.data.record;
+							        resolve(httpConfig);
+							    } else if(data.records && ((httpConfig.data.operations && !httpConfig.data.operations[0].record) || !httpConfig.data.operations)) {
+							    	httpConfig.data.operations = [];
+							    	forEach(data.records,function(record){
+							    		httpConfig.data.operations.push({operationType:'update',record:record.record});
+							    	});
+							        delete httpConfig.data.records;
+							        resolve(httpConfig);
+							    }
+						    }
+						});
 					}
 
 					httpConfig.data.zoneID = {zoneName:zoneName};
 
-			        var promise = $http(httpConfig).then(function (response) {
-			        	var data = response.data, promise = value.$promise;
+					var checkSubpromise = checkSub(httpConfig);
 
-			            if (data) {
-			              // Need to convert action.isArray to boolean in case it is undefined
-			              // jshint -W018
-			              if (name == "query" && data.records && angular.isArray(data.records) !== (!!action.isArray)) {
-			                throw $resourceMinErr('badcfg',
-			                    'Error in resource configuration. Expected ' +
-			                    'response to contain an {0} but got an {1}',
-			                  action.isArray ? 'array' : 'object',
-			                  angular.isArray(data) ? 'array' : 'object');
-			              }
-			              // jshint +W018
-			              if (action.isArray) {
-			                // value.records.length = 0;
-			                value.total = data.total;
-			                value.continuationMarker = data.continuationMarker;
-			                // console.log(data);
-			                forEach(data.records, function (item) {
-			                	// console.log(item);
-			                	
-			                	if (typeof item === "object") {
-				                    value.records.push(new Resource({record:item}));
-				                } else {
-				                    // Valid JSON values may be string literals, and these should not be converted
-				                    // into objects. These items will not have access to the Resource prototype
-				                    // methods, but unfortunately there
-				                    value.records.push(item);
-			                  	}
-			                });
-			              } else {
-			              	if(name == "get" || name == "save") {
-			              		if(data.records[0].serverErrorCode) {
+					var promise = checkSubpromise.then(function(httpConfig) {
 
-			              			// console.log(data,value);
+						if(container.ckSession) {
+							httpConfig.url = httpConfig.url+"&ckSession="+encodeURIComponent(container.ckSession);
+						}
 
-			              			value.$resolved = true;
+						// var promise = 
+			        	return $http(httpConfig).then(function (response) {
+				        	var data = response.data, promise = value.$promise;
 
-			              			// var reason = data.records[0].reason;
-
-			              			(error||noop)(response);
-
-			              			// console.log(this);
-
-			              			return $q.reject(response);
-			              			// if(httpConfig.data.operations && httpConfig.data.operations.record) {
-				              		// 	data.record = httpConfig.data.operations.record;
-				              		// }
-			              			// // delete data.records;
-
-			              			// shallowClearAndCopy(data, value);
-
-			              			// value.$resolved = true;
-
-						            // response.resource = value;
-
-						            // console.log(data,value);
-
-						            // return response;
-					        		// return $q.reject(reason);;
-					        	}
-
-					        	// console.log(value);
-
-					        	if(value.records) {
-					        		var records = copy(data.records);
-					        		data.records = [];
-					        		data.total = value.total;
-					        		data.query = value.query;
-					                data.continuationMarker = value.continuationMarker;
-
-					        		forEach(records,function(record){
-					        			data.records.push(new Resource({record:record}));
+				            if (data) {
+				              // Need to convert action.isArray to boolean in case it is undefined
+				              // jshint -W018
+				              if (name == "query" && data.records && angular.isArray(data.records) !== (!!action.isArray)) {
+				                throw $resourceMinErr('badcfg',
+				                    'Error in resource configuration. Expected ' +
+				                    'response to contain an {0} but got an {1}',
+				                  action.isArray ? 'array' : 'object',
+				                  angular.isArray(data) ? 'array' : 'object');
+				              }
+				              // jshint +W018
+				              if (action.isArray) {
+				                // value.records.length = 0;
+				                value.total = data.total;
+				                value.continuationMarker = data.continuationMarker;
+				                // console.log(data);
+				                forEach(data.records, function (record) {
+				                	// var getcomments = model.comments.$query({query:{recordType:'Comments',filterBy:[{comparator:'EQUALS',fieldName:'post',fieldValue:{value:{action:"NONE",recordName:record.recordName,zoneID:{zoneName:zoneName}},type:'REFERENCE'}}]}});
+				                	// console.log(getcomments);
+				                	forEach(record.fields,function(field,fieldkey){
+					        			if(field.type == "REFERENCE") {
+					        				// var modelFac = new model[fieldkey];
+					        				if(model[fieldkey] && model[fieldkey].model) {
+					        					// field.value = 
+					        					var newmodel = new model[fieldkey].model;
+						        				var getsub = newmodel.$get({records:{recordName:field.value.recordName}})
+						        				getsub.then(function(subres){
+						        					// console.log(subres.record.fields,fieldkey);
+						        					field.value = subres.record.fields;
+						        					// console.log(subres.record.fields,item.fields.type.value,field,fieldkey);
+						        					// field.value = subres.record.fields[item.fields.type.value].value;
+						        				});
+						        			}
+					        			} else if(field.type == "REFERENCE_LIST") {
+					        				if(model[fieldkey] && model[fieldkey].model) {
+					        					var values = copy(field.value);
+					        					field.value = [];
+					        					forEach(values,function(referencevalue){
+					        						var newmodel = new model[fieldkey].model;
+					        						var getsub = newmodel.$get({records:{recordName:referencevalue.recordName}})
+							        				getsub.then(function(subres){
+							        					// console.log(subres.record.fields,fieldkey);
+							        					field.value.push(subres.record.fields);
+							        					// console.log(subres.record.fields,item.fields.type.value,field,fieldkey);
+							        					// field.value = subres.record.fields[item.fields.type.value].value;
+							        				});
+					        					});				        					
+					        				}
+					        			}
 					        		});
-				              		// delete data.records;
-					        	} else {
-					        		data.record = data.records[0];
-					        		forEach(assets,function(asset){
-					        			console.log(asset.value);
-					        			module.uploadFile(asset.key,asset.value,recordName,zoneName,data.record);
-					        		});
-				              		delete data.records;
-					        	}
-			              	}
-			                shallowClearAndCopy(data, value);
-			                value.$promise = promise;
-			              }
-			            }
+				                	if (typeof record === "object") {
+					                    value.records.push(new Resource({record:record}));
+					                } else {
+					                    // Valid JSON values may be string literals, and these should not be converted
+					                    // into objects. These items will not have access to the Resource prototype
+					                    // methods, but unfortunately there
+					                    value.records.push(record);
+				                  	}
+				                });
+				              } else {
+				              	if(name == "get" || name == "save") {
+				              		if(data.records[0].serverErrorCode) {
 
-			            if (name == "query") {
-				            module.lookupZone(recordName,zoneName,value,Resource);
-				        }
+				              			// console.log(data,value);
 
-			            value.$resolved = true;
+				              			value.$resolved = true;
 
-			            response.resource = value;
+				              			// var reason = data.records[0].reason;
 
-			            return response;
-			        }, function(response) {
-			            value.$resolved = true;
+				              			(error||noop)(response);
 
-			            (error||noop)(response);
+				              			// console.log(this);
 
-			            return $q.reject(response);
-			        });
+				              			return $q.reject(response);
+				              			// if(httpConfig.data.operations && httpConfig.data.operations.record) {
+					              		// 	data.record = httpConfig.data.operations.record;
+					              		// }
+				              			// // delete data.records;
 
-			        promise = promise.then(
-		              function(response) {
+				              			// shallowClearAndCopy(data, value);
+
+				              			// value.$resolved = true;
+
+							            // response.resource = value;
+
+							            // console.log(data,value);
+
+							            // return response;
+						        		// return $q.reject(reason);;
+						        	}
+
+						        	if(value.records) {
+						        		var records = copy(data.records);
+						        		data.records = [];
+						        		data.total = value.total;
+						        		data.query = value.query;
+						                data.continuationMarker = value.continuationMarker;
+
+						        		forEach(records,function(record){
+						        			forEach(record.fields,function(field,fieldkey){
+						                		// console.log(field,fieldkey);
+							        			if(field.type == "REFERENCE") {
+							        				// var modelFac = new model[fieldkey];
+							        				if(model[fieldkey] && model[fieldkey].model) {
+							        					// field.value = 
+							        					var newmodel = new model[fieldkey].model;
+								        				var getsub = newmodel.$get({records:{recordName:field.value.recordName}})
+								        				getsub.then(function(subres){
+								        					// console.log(subres.record.fields,fieldkey);
+								        					field.value = subres.record.fields;
+								        					// console.log(subres.record.fields,item.fields.type.value,field,fieldkey);
+								        					// field.value = subres.record.fields[item.fields.type.value].value;
+								        				});
+								        			}
+							        			} else if(field.type == "REFERENCE_LIST") {
+							        				if(model[fieldkey] && model[fieldkey].model) {
+							        					var values = copy(field.value);
+							        					field.value = [];
+							        					forEach(values,function(referencevalue){
+							        						var newmodel = new model[fieldkey].model;
+							        						var getsub = newmodel.$get({records:{recordName:referencevalue.recordName}})
+									        				getsub.then(function(subres){
+									        					// console.log(subres.record.fields,fieldkey);
+									        					field.value.push(subres.record.fields);
+									        					// console.log(subres.record.fields,item.fields.type.value,field,fieldkey);
+									        					// field.value = subres.record.fields[item.fields.type.value].value;
+									        				});
+							        					});				        					
+							        				}
+							        			}
+							        		});
+
+						        			data.records.push(new Resource({record:record}));
+						        		});
+					              		// delete data.records;
+						        	} else {
+						        		var record = data.records[0];
+						        		data.record = record;
+
+						        		forEach(record.fields,function(field,fieldkey){
+					                		// console.log(field,fieldkey);
+						        			if(field.type == "REFERENCE") {
+						        				// var modelFac = new model[fieldkey];
+						        				if(model[fieldkey] && model[fieldkey].model) {
+						        					// field.value = 
+						        					var newmodel = new model[fieldkey].model;
+							        				var getsub = newmodel.$get({records:{recordName:field.value.recordName}})
+							        				getsub.then(function(subres){
+							        					// console.log(subres.record.fields,fieldkey);
+							        					field.value = subres.record.fields;
+							        					// console.log(subres.record.fields,item.fields.type.value,field,fieldkey);
+							        					// field.value = subres.record.fields[item.fields.type.value].value;
+							        				});
+							        			}
+						        			} else if(field.type == "REFERENCE_LIST") {
+						        				if(model[fieldkey] && model[fieldkey].model) {
+						        					var values = copy(field.value);
+						        					field.value = [];
+						        					forEach(values,function(referencevalue){
+						        						var newmodel = new model[fieldkey].model;
+						        						var getsub = newmodel.$get({records:{recordName:referencevalue.recordName}})
+								        				getsub.then(function(subres){
+								        					// console.log(subres.record.fields,fieldkey);
+								        					field.value.push(subres.record.fields);
+								        					// console.log(subres.record.fields,item.fields.type.value,field,fieldkey);
+								        					// field.value = subres.record.fields[item.fields.type.value].value;
+								        				});
+						        					});				        					
+						        				}
+						        			}
+						        		});
+
+					              		delete data.records;
+						        	}
+				              	}
+				                shallowClearAndCopy(data, value);
+				                value.$promise = promise;
+				              }
+				            }
+
+				            if (name == "query") {
+					            module.lookupZone(recordName,zoneName,value,Resource);
+					        }
+
+				            value.$resolved = true;
+
+				            response.resource = value;
+
+				            return response;
+				        }, function(response) {
+				            value.$resolved = true;
+
+				            (error||noop)(response);
+
+				            return $q.reject(response);
+				        });
+					});
+
+			        promise = promise.then(function(response) {
 		                var value = responseInterceptor(response);
 		                (success||noop)(value, response.headers);
 		                return value;
