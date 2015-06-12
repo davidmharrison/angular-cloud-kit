@@ -15,34 +15,6 @@ cloudApp.controller("MainController",['$scope','$cloudKit','Post','Types',functi
 	// UserBookmarkLU.query({zoneID:{zoneName:"bookmarksZone"},resultsLimit:10,query:{recordType:'UserBookmarkLU'}},function(result){
 	// 	console.log("page1",result);
 	// });
-  // Bookmark.get({records:{recordName:"B4B43726-1CA6-4F60-BCEC-932A9610CEAD"}},function(result){
-  //   // console.log(result);
-
-  //   $scope.bookmark = result;
-
-  //   // result.record.fields.title.value = "EU Title";
-  //   // result.$save(function(postres){
-  //     // console.log(result,postres);  
-  //   // });
-  //   // console.log(result);
-  //   // result.$save({fields:[{title:{value:'EU Updated Title'}}]});
-  //   // Bookmark.save({operations:[{operationType:'update',record:{recordType:'Bookmarks',recordName:'B4B43726-1CA6-4F60-BCEC-932A9610CEAD',recordChangeTag:result.recordChangeTag}}]},function(result){
-  //   //   console.log(result);
-  //   // });
-  // },function(err){
-  // 	console.log(err);
-  // });
-
-  $scope.sucCB = function(suc){
-  	console.log(suc);
-  }
-
-  $scope.errCB = function(err){
-  	console.log(err);
-
-  }
-
-	// ,filterBy:[{comparator:'BEGINS_WITH',fieldName:'title',fieldValue:{value:'EU'}}]
   var posts = Post.query({resultsLimit:10},function(result){
       // angular.forEach(result.records,function(record){
       // 	var recordType = record.record.fields.type.value;
@@ -52,6 +24,7 @@ cloudApp.controller("MainController",['$scope','$cloudKit','Post','Types',functi
       // });
       $scope.posts = result;
       // console.log("page1",result);
+      console.log("page1",result);
       // Bookmark.query({zoneID:{zoneName:"_defaultZone"},continuationMarker:result.continuationMarker,resultsLimit:10,query:{recordType:'Bookmarks'}},function(result1){
       // 		console.log("page2",result1);
       // });
@@ -63,7 +36,7 @@ cloudApp.controller("MainController",['$scope','$cloudKit','Post','Types',functi
   	
   // })
 
-	$scope.newbookmark = {};
+	$scope.newpost = {};
 
 	$scope.saveAll = function() {
 		$scope.bookmarks.$save(function(suc){

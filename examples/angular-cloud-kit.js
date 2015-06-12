@@ -545,8 +545,6 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 			            }
 			        });
 
-			        
-
 			        // data['records'] = {'recordName':recordName,'desiredKeys':fields};
 
 			        if (hasBody) { 
