@@ -1,0 +1,239 @@
+body {
+	background-color: #95a5a6;
+	padding-top: 70px;
+	color: rgba(255,255,255,0.6);
+}
+label {
+	font-weight: 300;
+}
+.navbar .search {
+	border: 0px;
+	background-color: transparent;
+	color: #fff;
+	outline: 0;
+	box-shadow: none;
+}
+.navbar .search::-webkit-input-placeholder {
+   color: rgba(255,255,255,0.6);
+}
+.navbar .search:-moz-placeholder { /* Firefox 18- */
+   color: rgba(255,255,255,0.6);
+}
+
+.navbar .search::-moz-placeholder {  /* Firefox 19+ */
+   color: rgba(255,255,255,0.6);
+}
+
+.navbar .search:-ms-input-placeholder {  
+   color: rgba(255,255,255,0.6);
+}
+.navbar .search:before {
+  content: "\f14e";
+  position: absolute;
+  font-size: 29px;
+  color: inherit;
+  z-index: 2;
+  left: 4px;
+  top: 8px;
+}
+.navbar-default.navbar-greensea {
+	background-color: #95a5a6;
+	border-color: rgba(255,255,255,0.6);
+}
+.navbar-default .navbar-nav>li>a {
+	color: rgba(255,255,255,0.6);
+}
+.navbar-default .navbar-nav>li>a:focus,.navbar-default .navbar-nav>li>a:hover {
+	color: #fff;
+}
+.navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.active>a:focus, .navbar-default .navbar-nav>.active>a:hover {
+	color: #fff;
+  	background-color: transparent;
+}
+.posts {
+	color: #000;
+}
+.posts .post {
+	background-color: #fff;
+	border-radius: 3px;
+}
+.posts .post .header, .posts .post .body, .posts .post .footer {
+	/*padding: 10px;*/
+	padding-right: 20px;
+	padding-left: 20px;
+}
+.posts .post .header {
+	margin: -3px 0 13px;
+	/*height: 20px;*/
+  	vertical-align: middle;
+}
+.posts .post .header, .posts .post .footer {
+	padding-top: 10px;
+}
+.posts .post .body {
+	margin-top: 15px;
+}
+/*.posts .post .post_media+.body:not(:empty) {
+  margin-top: 15px;
+}*/
+.images {
+	display: -ms-flexbox;
+	-ms-flex-wrap: wrap;
+	-ms-flex-direction: column;
+	-webkit-flex-flow: row wrap;
+	flex-flow: row wrap;
+	display: -webkit-box;
+	display: flex;
+}
+.images .image {
+	/*display: flex;*/
+	-webkit-box-flex: auto;
+	-ms-flex: auto;
+	flex: auto;
+	flex-shrink: 1;
+	/*margin: .5vw;*/
+	width: 200px;
+	/*overflow: hidden;*/
+}
+
+.links {
+
+}
+
+.links .link {
+	min-height: 20px;
+	padding: 19px;
+	margin-bottom: 20px;
+	background-color: #f5f5f5;
+}
+
+.images .image img {
+	width: 100%;
+	height: auto;
+}
+
+.comments {
+	/*padding: 7px;*/
+}
+
+.btn-group .dropdown {
+	position: relative;
+	float: left;
+}
+.footer .links .btn, .footer .links .btn:active, .footer .links .btn:focus {
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+}
+.btn-group .dropdown:first-child:not(:last-child):not(.dropdown-toggle)>.btn {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.btn-group .dropdown:last-child:not(:first-child)>.btn, .btn-group .dropdown>.dropdown-toggle:not(:first-child) {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.btn-group .dropdown+.dropdown, .btn-group .dropdown+.btn-group .dropdown, .btn-group .dropdown .btn-group .dropdown+.dropdown, .btn-group .btn-group+.btn-group {
+  margin-left: -1px;
+}
+
+.am-fade.aside-backdrop,
+.am-fade.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.dl-horizontal dd:before,
+.dl-horizontal dd:after,
+.container:before,
+.container:after,
+.container-fluid:before,
+.container-fluid:after,
+.row:before,
+.row:after,
+.form-horizontal .form-group:before,
+.form-horizontal .form-group:after,
+.btn-toolbar:before,
+.btn-toolbar:after,
+.btn-group-vertical > .btn-group:before,
+.btn-group-vertical > .btn-group:after,
+.nav:before,
+.nav:after,
+.navbar:before,
+.navbar:after,
+.navbar-header:before,
+.navbar-header:after,
+.navbar-collapse:before,
+.navbar-collapse:after,
+.pager:before,
+.pager:after,
+.panel-body:before,
+.panel-body:after,
+.modal-footer:before,
+.modal-footer:after {
+  content: " ";
+  display: table;
+}
+.dl-horizontal dd:after,
+.container:after,
+.container-fluid:after,
+.row:after,
+.form-horizontal .form-group:after,
+.btn-toolbar:after,
+.btn-group-vertical > .btn-group:after,
+.nav:after,
+.navbar:after,
+.navbar-header:after,
+.navbar-collapse:after,
+.pager:after,
+.panel-body:after,
+.modal-footer:after {
+  clear: both;
+}
+.modal {
+	color: #000;
+}
+.modal.disabled {
+  animation: noop !important;
+}
+.modal.disabled.am-fade-and-slide-top .modal-dialog {
+  animation-duration: 0.3s;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: backwards;
+  animation-name: fadeAndSlideFromTop;
+}
+.modal.disabled.am-fade-and-slide-top.ng-enter .modal-dialog {
+  visibility: hidden;
+  animation-name: fadeAndSlideFromTop;
+}
+.modal.disabled.am-fade-and-slide-top.ng-enter-active .modal-dialog,
+.modal.disabled.am-fade-and-slide-top.ng-leave-active .modal-dialog {
+  visibility: visible;
+}
+.modal.disabled.am-fade-and-slide-top.ng-leave .modal-dialog {
+  animation-name: fadeAndSlideToTop;
+}
+.modal.disabled.am-fade-and-scale .modal-dialog {
+  animation-duration: 0.3s;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: backwards;
+  animation-name: fadeAndScaleIn;
+}
+.modal.disabled.am-fade-and-scale.ng-enter .modal-dialog {
+  visibility: hidden;
+  animation-name: fadeAndScaleIn;
+}
+.modal.disabled.am-fade-and-scale.ng-enter-active .modal-dialog,
+.modal.disabled.am-fade-and-scale.ng-leave-active .modal-dialog {
+  visibility: visible;
+}
+.modal.disabled.am-fade-and-scale.ng-leave .modal-dialog {
+  animation-name: fadeAndScaleOut;
+}
+@keyframes noop {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+  }
+}
