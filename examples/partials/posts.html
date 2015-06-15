@@ -1,0 +1,52 @@
+<div class="row">
+	<div class="col-md-2">
+
+	</div>
+	<div class="col-md-6">
+		<div class="posts">
+			<div class="post" ng-repeat="post in posts.records | orderBy:orderby:true">
+				<div ng-include="'partials/_post.html'"></div>
+				<hr>
+			</div>
+		</div>
+		<!-- <div class="table-responsive">
+			<table class="table table-bordered">
+				<thead>
+					<tr><th>Title</th><th>Title</th><th>Text</th><th>URL</th><th>Save</th></tr>
+				</thead>
+				<tbody>
+					<tr ng-repeat="bookmark in posts.records">
+						<td>
+							<a ng-href="{{bookmark.record.fields.url.value}}">{{bookmark.record.fields.title.value}}</a>
+						</td>
+						<td>
+							<input placeholder="Title" class="form-control" ng-model="bookmark.record.fields.title.value">
+						</td>
+						<td>
+							<a download="Text" ng-show="bookmark.record.fields.text.value.downloadURL" ng-href="{{bookmark.record.fields.text.value.downloadURL}}">Download File</a>
+							<input ng-show="!bookmark.record.fields.text.value.downloadURL" type="file" placeholder="URL" class="form-control" ng-model="bookmark.record.fields.text" app-filereader>
+						</td>
+						<td>
+							<input placeholder="URL" class="form-control" ng-model="bookmark.record.fields.url.value">
+						</td>
+						<td>
+							<button class="btn btn-success" ng-click="bookmark.$save(sucCB,errCB)">Save</button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<button class="btn btn-success btn-block"  ng-show="posts.records.length < posts.total" ng-click="posts.$query()">Load More</button>
+		<hr>
+		<button class="btn btn-success btn-block" ng-click="saveAll()">Save All</button> -->
+	</div>
+	<div class="col-md-4">
+		<form>
+			<div class="form-group">
+				<label>Title</label>
+				<input placeholder="Title" class="form-control" ng-model="newblog.fields.title.value">
+			</div>
+			<button class="btn btn-success" ng-click="newBlog(newblog)">New Blog</button>
+		</form>
+	</div>
+</div>

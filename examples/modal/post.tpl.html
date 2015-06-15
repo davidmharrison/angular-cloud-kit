@@ -1,0 +1,57 @@
+<div class="modal top am-fade-and-slide-top" tabindex="-1" role="dialog" style="display: block;">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" ng-click="$hide()">×</button>
+                <!-- ng-bind-html="post.record.fields.title.value" -->
+                <h4 class="modal-title">{{post.record.fields.title.value}}</h4>
+            </div>
+            <div class="modal-body">
+                <form>
+					<div class="form-group">
+						<label>Blog</label>
+						<!-- <input type="checkbox" ng-true-value="1" ng-false-value="0" class="" ng-model="newpost.fields.allow_comments.value"> -->
+						<select ng-model="post.record.fields.blog.value" class="form-control" ng-options="blog.record as blog.record.fields.title.value for blog in blogs.records">
+
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Title</label>
+						<input placeholder="Title" class="form-control" ng-model="post.record.fields.title.value">
+					</div>
+					<!-- <div class="form-group">
+						<label>Type</label>
+						<text></text>
+					</div> -->
+					<div class="form-group">
+						<label>URL</label>
+						<input placeholder="URL" ng-blur="checkURL(post.record.fields.content.value.fields.link)" class="form-control" ng-model="post.record.fields.content.value.fields.link.value[0].fields.url.value">
+						<input ng-show="post.record.fields.content.value.fields.link.value[0].fields.title" placeholder="Title" class="form-control" ng-model="post.record.fields.content.value.fields.link.value[0].fields.title.value">
+						<input ng-show="post.record.fields.content.value.fields.link.value[0].fields.title" placeholder="Description" class="form-control" ng-model="post.record.fields.content.value.fields.link.value[0].fields.description.value">
+					</div>
+					<div class="form-group">
+						<label>Text</label>
+						<textarea placeholder="Text" class="form-control" ng-model="post.record.fields.content.value.fields.text.value"></textarea>
+					</div>
+					<div class="form-group">
+						<label>Images</label>
+						<!-- multiple -->
+						<input class="form-control" type="file" ng-model="post.record.fields.content.image.image.value" app-filereader>
+					</div>
+					<div class="form-group">
+						<label>Allow Comments</label>
+						<input type="checkbox" ng-true-value="1" ng-false-value="0" class="" ng-model="post.record.fields.allow_comments.value">
+					</div>
+					<!-- <div class="form-group">
+						<label>Tags</label>
+						<input placeholder="Text" type="checbox" ng-true-value="1" ng-false-value="0" class="form-control" ng-model="newbookmark.fields.allow_comments.value">
+					</div> -->
+				</form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" ng-click="$hide()">Close</button>
+                <button type="button" class="btn btn-primary" ng-click="savePost(post)">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
