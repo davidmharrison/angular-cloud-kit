@@ -301,7 +301,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies','angular-cache']).config(
 					var syncToken = zone.syncToken;
 
 					saveSyncToken(zoneName,syncToken);
-					// module.notifications();
+					module.notifications();
 				});
 				zonewatchers[zoneName] = true;
 			}
@@ -343,7 +343,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies','angular-cache']).config(
 				if(result.ck.qry.zid!='_defaultZone') {
 					module.getChanges(result.ck.qry.zid);
 				}
-				module.longpoll(url);
+				// module.longpoll(url);
 			}).error(function(err){
 				// console.log(err);
 			});
@@ -540,9 +540,9 @@ var cloudKit = angular.module('cloudKit', ['ngCookies','angular-cache']).config(
 
 				Resource[name] = function(a1, a2, a3, a4) {
 
-					// if (name == "query") {
-			  //           module.lookupZone(recordName,zoneName,value,Resource);
-			  //       }
+					if (name == "query") {
+			            module.lookupZone(recordName,zoneName,value,Resource);
+			        }
 
 					// console.log(a1, a2, a3, a4);
 
@@ -1041,6 +1041,8 @@ var cloudKit = angular.module('cloudKit', ['ngCookies','angular-cache']).config(
 	                	cacheId = cacheId + "*" + httpConfig.data.continuationMarker;
 	                }
 
+	                // console.log(httpConfig.data,cacheId);
+
 					if(name == "save" || name == "remove" || name == "delete") {
 						// var cachedData = cache.get(cacheId);
 						// console.log(cacheId,cachedData,cache);
@@ -1058,7 +1060,6 @@ var cloudKit = angular.module('cloudKit', ['ngCookies','angular-cache']).config(
 
 
 					  		var promise = $q(function(resolve, reject) {
-
 					  			resolve(cachedData);
 					  		});
 
@@ -1421,6 +1422,9 @@ var cloudKit = angular.module('cloudKit', ['ngCookies','angular-cache']).config(
 
 								// console.log(cacheId,response);
 								if(name == "query" || name == "get") {
+
+									console.log(cacheId, response);
+
 									cache.put(cacheId, response);
 								}
 

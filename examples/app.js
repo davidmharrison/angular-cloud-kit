@@ -144,7 +144,7 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
 
 }]);
 
-cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKit','Blog','Post','Types','$location','User',function($rootScope,$scope,$filter,$cloudKit,Blog,Post,Types,$location,User){
+cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKit','Blog','Post','Types','$location','User','$timeout',function($rootScope,$scope,$filter,$cloudKit,Blog,Post,Types,$location,User,$timeout){
   var subdomain = $location.host().split(".")[0] != "cloudkit" ? $location.host().split(".")[0] : null;
 
   $scope.allrecords = true;
@@ -165,13 +165,18 @@ cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKi
     Post.query({resultsLimit:10,query:{sortBy:[{fieldName:'___createTime',ascending:false}]}},function(result){
         $rootScope.posts = result;
         $rootScope.loading = false;
-        $scope.allrecords = false;
+        $timeout(function(){
+          $scope.allrecords = false;
+        },3000);
     });
   }
 
   $scope.morePosts = function() {
+    $scope.allrecords = true;
     // console.log($rootScope.posts);
     $rootScope.posts.$query(function(result){
+      console.log(result);
+      $scope.allrecords = false;
       // $rootScope.posts = result;
       if(result.total == result.records.length) {
         $scope.allrecords = true;

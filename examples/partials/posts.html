@@ -3,7 +3,7 @@
 
 	</div>
 	<div class="col-md-6">
-		<div window-infinite-scroll="morePosts()" infinite-scroll-disabled="allrecords" class="posts">
+		<div window-infinite-scroll="morePosts()" infinite-scroll-disabled="posts.total == posts.records.length" class="posts">
 			<div ng-show="loading" class="text-center loading post">
 				<img src="496.gif">
 				<hr>
