@@ -162,7 +162,7 @@ cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKi
     });
   } else {
     $rootScope.loading = true;
-    Post.query({resultsLimit:10},function(result){
+    Post.query({resultsLimit:10,query:{sortBy:[{fieldName:'___createTime',ascending:false}]}},function(result){
         $rootScope.posts = result;
         $rootScope.loading = false;
         $scope.allrecords = false;
@@ -172,7 +172,7 @@ cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKi
   $scope.morePosts = function() {
     // console.log($rootScope.posts);
     $rootScope.posts.$query(function(result){
-      $rootScope.posts = result;
+      // $rootScope.posts = result;
       if(result.total == result.records.length) {
         $scope.allrecords = true;
       }
