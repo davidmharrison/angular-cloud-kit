@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:ng="http://cloudkit.dev" id="ng-app" ng-app="cloudApp">
 <head>
+	<base href="/">
 	<!-- Latest compiled and minified CSS -->
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" />
 	<link href="style.css" rel="stylesheet" />
 	<title>CloudKit Module</title>
+	<script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 </head>
 <body>
 	<div ng-controller="MainController" class="container">
@@ -23,19 +25,41 @@
 	            <span class="icon-bar"></span>
 	            <span class="icon-bar"></span>
 	          </button>
-	          <!-- <a class="navbar-brand" href="#">Brand</a> -->
+	          <a class="navbar-brand" href="#/">Blog</a>
 	        </div>
-	        <form ng-submit="doSearch(search)" class="navbar-form navbar-left" role="search">
-	            <div class="form-group">
-	              	<input type="text" class="form-control search" ng-model="search" placeholder="Search">
-	            </div>
-	            <!-- <button type="submit" class="btn btn-default">Submit</button> -->
-	        </form>
 	        <div class="collapse navbar-collapse navbar-right" id="bs-example-navbar-collapse-6">
+	        	<form ng-submit="doSearch(search)" class="navbar-form navbar-left" role="search">
+		            <div class="form-group">
+		              	<input type="text" class="form-control search" ng-model="search" placeholder="Search">
+		            </div>
+		            <!-- <button type="submit" class="btn btn-default">Submit</button> -->
+		        </form>
 	          <ul class="nav navbar-nav">
 	            <li class="active"><a href="#/"><i class="glyphicon glyphicon-home"></i></a></li>
-	            <li><a href="#/account"><i class="glyphicon glyphicon-user"></i></a></li>
-	            <li><a data-container="body" data-animation="am-fade-and-slide-top" data-template="modal/newpost.tpl.html" bs-modal="" href=""><i class="glyphicon glyphicon-pencil"></i></a></li>
+	            <li class="dropdown">
+		          <a href="" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="glyphicon glyphicon-user"></i></a>
+		          <ul class="dropdown-menu" role="menu">
+			        <li><a href="#/likes">Likes</a></li>
+			        <li><a href="#/following">Following</a></li>
+		            <li><a href="#/account">Settings</a></li>
+		            <!-- <li><a href="#">Something else here</a></li> -->
+		            <li><a href="#/blog/new">New Blog</a>
+		            <li ng-repeat-start="blog in currentuser.record.fields.blogs.value" class="divider"></li>
+		            <li ng-repeat-end><a href="#/blog/{{blog.recordName}}">{{blog.fields.title.value}}</a></li>
+		            <!-- <li class="divider"></li>
+		            <li><a href="#"></a></li> -->
+		          </ul>
+		        </li>
+		        <li class="dropdown">
+		          <a href="" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false"><i class="glyphicon glyphicon-pencil"></i></a>
+		          <ul class="dropdown-menu" role="menu">
+			        <li ng-repeat="type in types.records"><a ng-click="openModal(type.record)" href="">{{type.record.fields.type.value}}</a></li>
+			        <!-- <li><a href="#/following">Following</a></li> -->
+		            <!-- <li><a href="#/account">Settings</a></li> -->
+		          </ul>
+		        </li>
+	            <!-- <li><a href="#/account"><i class="glyphicon glyphicon-user"></i></a></li> -->
+	            <!-- <li><a  href=""><i class="glyphicon glyphicon-pencil"></i></a></li> -->
 	          </ul>
 	        </div><!-- /.navbar-collapse -->
 	      </div>
@@ -62,5 +86,6 @@
 	<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
 	<script src="angular-cloud-kit.js"></script>
+	<script src="angular-disqus.min.js"></script>
 	<script src="app.js"></script>
 </body>

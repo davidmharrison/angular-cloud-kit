@@ -2,65 +2,158 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <button type="button" class="close" ng-click="$hide()">×</button>
-                <!-- ng-bind-html="post.record.fields.title.value" -->
-                <h4 class="modal-title">New Post</h4>
-            </div>
-            <div class="modal-body">
-                <form>
-					<div class="form-group">
-						<label>Blog</label>
+            	<div class="row">
+		            <div class="col-sm-6">
+						<!-- <label>Blog</label> -->
 						<!-- <input type="checkbox" ng-true-value="1" ng-false-value="0" class="" ng-model="newpost.fields.allow_comments.value"> -->
-						<select ng-model="newpost.fields.blog.value" class="form-control" ng-options="blog as blog.fields.title.value for blog in currentuser.record.fields.blogs.value">
+						<!-- <select ng-model="newpost.fields.blog.value" class="form-control" ng-options="blog as blog.fields.title.value for blog in currentuser.record.fields.blogs.value">
 
-						</select>
+						</select> -->
+						<div class="dropdown">
+						  <button class="btn btn-link dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-expanded="true">
+						  	{{newpost.fields.blog.value.fields.title.value}}
+						    <!-- <i class="glyphicon glyphicon-cog"></i> -->
+						    <span class="caret"></span>
+						  </button>
+						  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
+						    <li ng-repeat="blog in currentuser.record.fields.blogs.value" role="presentation"><a ng-click="newpost.fields.blog.value = blog" href="">{{blog.fields.title.value}}</a></li>
+						    <!-- <li role="presentation"><a ng-click="deletePost(post,$index)" href="">Delete</a></li> -->
+						  </ul>
+						</div>
 					</div>
-					<div class="form-group">
-						<label>Title</label>
-						<input placeholder="Title" class="form-control" ng-model="newpost.fields.title.value">
+					<div class="col-sm-6">
+						<div class="dropdown pull-right">
+						  <button class="btn btn-link dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-expanded="true">
+						    <i class="glyphicon glyphicon-cog"></i>
+						    <!-- <span class="caret"></span> -->
+						  </button>
+						  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
+						    <li role="presentation"><a ng-click="newpost.fields.allow_comments.value = !newpost.fields.allow_comments.value" href="">
+						    	<span ng-show="newpost.fields.allow_comments.value!=1">Allow Comments</span>
+						    	<span ng-show="newpost.fields.allow_comments.value==1">Remove Comments</span>
+							    <!-- <i class="glyphicon" ng-class="{'glyphicon-ok':newpost.fields.allow_comments.value==1,'glyphicon-remove':newpost.fields.allow_comments.value!=1}"></i> -->
+						    </a></li>
+						    <li role="presentation"><a href="">Delete</a></li>
+						  </ul>
+						</div>
 					</div>
+				</div>
+				<div class="clearfix"></div>
+                <!-- <button type="button" class="close" ng-click="$hide()">×</button> -->
+                <!-- ng-bind-html="post.record.fields.title.value" -->
+                <!-- <h4 class="modal-title">New Post</h4> -->
+            </div>
+            <div id="newpost" class="post" ng-class="{'is_regular':newpost.fields.type.value.fields.type.value=='Text','is_link':newpost.fields.type.value.fields.type.value=='Link'}">
+                <form class="">
+					<div class="body">
+						<!-- <div class="newpost-type"> -->
+							<!-- <label>Type</label> -->
+							<!-- <input type="checkbox" ng-true-value="1" ng-false-value="0" class="" ng-model="newpost.fields.allow_comments.value"> -->
+							<!-- <select ng-model="newpost.fields.type.value" class="form-control" ng-options="type.record as type.record.fields.type.value for type in types.records">
+
+							</select> -->
+							<!-- <br> -->
+						<!-- </div> -->
+						<div ng-if="newpost.fields.type.value.fields.type.value=='Text'" class="post_content">
+							<div class="newpost-title">
+								<!-- <label>Title</label> -->
+								<!-- <input placeholder="Title" class="form-control" ng-model="newpost.fields.title.value"> -->
+								<div class="editor editor-plaintext" aria-label="Post title" contenteditable="true" ng-model="newpost.fields.title.value"><span>​</span></div>
+								<div ng-show="!newpost.fields.title.value" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;">Title</div>
+								<!-- <br> -->
+							</div>
+						</div>
+					
 					<!-- <div class="form-group">
 						<label>Type</label>
 						<text></text>
 					</div> -->
-					<div class="form-group">
-						<label>URL</label>
-						<input placeholder="URL" ng-blur="checkURL(newpost.fields.content.link)" class="form-control" ng-model="newpost.fields.content.link.url.value">
-						<input ng-show="newpost.fields.content.link.title" placeholder="Title" class="form-control" ng-model="newpost.fields.content.link.title.value">
-						<input ng-show="newpost.fields.content.link.title" placeholder="Description" class="form-control" ng-model="newpost.fields.content.link.description.value">
-					</div>
-					<div class="form-group">
-						<label>Text</label>
-						<textarea placeholder="Text" class="form-control" ng-model="newpost.fields.content.text.value"></textarea>
-					</div>
-					<div class="form-group">
-						<label>Images</label>
-						<!-- multiple -->
-						<input class="form-control" type="file" ng-model="newpost.fields.content.image.image.value" app-filereader>
-					</div>
-					<div class="form-group">
-						<label>Allow Comments</label>
-						<input type="checkbox" ng-true-value="1" ng-false-value="0" class="" ng-model="newpost.fields.allow_comments.value">
+						<div ng-if="newpost.fields.type.value.fields.type.value=='Link'" class="newpost-link">
+							<!-- <label>URL</label> -->
+							<div ng-show="thumbnail" class="link-thumbnail images">
+								<div class="image">
+									<div ng-click="removeImage(newpost)" class="remove-image">
+										<span class="icon"></span>
+									</div>
+									<img ng-src="{{thumbnail}}">
+								</div>
+							</div>
+							<div ng-if="parsedLink" class="link">
+								<div class="link-container">
+									<div class="publisher-container">
+
+									</div>
+									<div class="title">
+										<div class="editor editor-plaintext" aria-label="Post title" contenteditable="true" ng-model="newpost.fields.content.link.title.value"><span>​</span></div>
+										<div ng-show="!newpost.fields.content.link.title.value" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;">Title</div>
+									</div>
+									<div class="excerpt">
+									<!-- </a> -->
+									<!-- <a target="_blank" ng-href="{{post.record.fields.content.value.fields.link.value.fields.url.value}}"> -->
+										<div class="editor editor-plaintext" aria-label="Post title" contenteditable="true" ng-model="newpost.fields.content.link.description.value"><span>​</span></div>
+										<div ng-show="!newpost.fields.content.link.description.value" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;">Summary</div>
+									</div>
+									<div ng-if="newpost.fields.content.link.author.value" class="author">
+										{{newpost.fields.content.link.author.value}}
+									</div>
+								</div>
+							</div>
+							<div ng-if="!parsedLink" class="url">
+								<div class="editor editor-plaintext" aria-label="Post title" contenteditable="true" ng-model-options="{ updateOn: 'default blur', debounce: {'default': 500, 'blur': 0} }" ng-change="checkURL(newpost.fields.content.link)" ng-model="newpost.fields.content.link.url.value"><span>​</span></div>
+								<div ng-show="!newpost.fields.content.link.url.value" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;  padding: 10px 20px;">URL</div>
+							</div>
+							<!-- <input ng-if="!parsedLink" placeholder="URL" ng-model-options="{ updateOn: 'default blur', debounce: {'default': 500, 'blur': 0} }" ng-change="checkURL(newpost.fields.content.link)" class="form-control" ng-model="newpost.fields.content.link.url.value"> -->
+							<!-- <br>
+							<input ng-show="newpost.fields.content.link.title" placeholder="Title" class="form-control" ng-model="newpost.fields.content.link.title.value">
+							<br>
+							<input ng-show="newpost.fields.content.link.title" placeholder="Description" class="form-control" ng-model="newpost.fields.content.link.description.value"> -->
+						</div>
+						<div>
+							<div class="newpost-body">
+								<!-- <label>Text</label> -->
+								<!-- <div class="text-area" contenteditable="true" ng-model="newpost.fields.content.text.value"></div> -->
+								<textarea placeholder="Text" class="text-area" ng-model="newpost.fields.content.text.value"></textarea>
+								<br>
+							</div>
+						</div>
+						<div ng-if="newpost.fields.type.value.fields.type.value=='image'" class="newpost-image">
+							<!-- <label>Images</label> -->
+							<!-- multiple -->
+							<input class="form-control" type="file" ng-model="newpost.fields.content.image.image.value" app-filereader>
+						</div>
+						<div class="newpost-tags">
+							<div class="tags">
+								<span ng-click="newpost.fields.tags.records.splice($index,1);" ng-repeat="tag in newpost.fields.tags.records" class="tag">{{tag.name.value}}</span>
+								<div class="new-tag">
+									<div class="new-tag-editor" ng-blur="addTag(newtag,$event,true);" ng-keyup="addTag(newtag,$event);" ng-model="newtag" contenteditable="true">
+
+									</div>
+									<div ng-show="newtag == null" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;">#tags</div>
+								</div>
+							</div>
+							<!-- <label>Tags</label> -->
+							<!-- <input placeholder="Text" type="checbox" ng-true-value="1" ng-false-value="0" class="form-control" ng-model="newbookmark.fields.allow_comments.value"> -->
+						</div>
 					</div>
 					<!-- <div class="form-group">
-						<label>Tags</label>
-						<input placeholder="Text" type="checbox" ng-true-value="1" ng-false-value="0" class="form-control" ng-model="newbookmark.fields.allow_comments.value">
-					</div> -->
+						<label>Allow Comments</label>
+						<input type="checkbox" ng-true-value="1" ng-false-value="0" class="" ng-model="newpost.fields.allow_comments.value">
+					</div> -->					
 				</form>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" ng-click="$hide()">Close</button>
+            <div ng-init="action = 'Post'" class="modal-footer">
+                <button type="button" class="btn btn-default pull-left" ng-click="$hide();">Close</button>
                 <!-- <button type="button" class="btn btn-primary" ng-click="newPost(newpost)">Create Post</button> -->
                 <div class="btn-group">
-				  <button type="button" class="btn btn-info">Action</button>
-				  <button ng-click="newPost(newpost,action)" type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+				  <button ng-click="newPost(newpost,action);$hide();" type="button" class="btn btn-info">{{action}}</button>
+				  <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
 				    <span class="caret"></span>
-				    <span class="sr-only">Post</span>
+				    <span class="sr-only">{{action}}</span>
 				  </button>
 				  <ul class="dropdown-menu" role="menu">
-				    <li><a ng-click="action = 'post'" href="#">Post</a></li>
-				    <li><a ng-click="action = 'draft'" href="#">Draft</a></li>
-				    <li><a ng-click="action = 'private'" href="#">Post Privatly</a></li>
+				    <li><a ng-click="action = 'Post'" href="">Post</a></li>
+				    <li><a ng-click="action = 'Draft'" href="">Draft</a></li>
+				    <li><a ng-click="action = 'Private'" href="">Post Privatly</a></li>
 				    <li class="divider"></li>
 				    <li><a href="#">Preview</a></li>
 				  </ul>

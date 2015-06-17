@@ -4,7 +4,7 @@
 	</div>
 	<div class="col-md-6">
 		<div class="posts">
-			<div class="post" ng-repeat="post in posts.records | orderBy:orderby:true">
+			<div class="post" ng-class="{'is_link':post.record.fields.type.value.fields.type.value=='Link','is_regular':post.record.fields.type.value.fields.type.value=='Text'}" ng-repeat="post in posts.records | orderBy:orderby:true">
 				<div ng-include="'partials/_post.html'"></div>
 				<hr>
 			</div>
@@ -41,12 +41,6 @@
 		<button class="btn btn-success btn-block" ng-click="saveAll()">Save All</button> -->
 	</div>
 	<div class="col-md-4">
-		<form>
-			<div class="form-group">
-				<label>Title</label>
-				<input placeholder="Title" class="form-control" ng-model="newblog.fields.title.value">
-			</div>
-			<button class="btn btn-success" ng-click="newBlog(newblog)">New Blog</button>
-		</form>
+		
 	</div>
 </div>

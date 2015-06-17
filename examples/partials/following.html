@@ -1,0 +1,26 @@
+<div class="col-md-2">
+
+</div>
+<div class="col-md-6">
+	<div class="panel panel-default">
+		<!-- <div class="panel-body"> -->
+		<div class="panel-body">
+	    	<p>Here is a list of blogs you are following</p>
+		</div>
+		<table class="table">
+			<tbody>
+				<tr ng-repeat="follow in following.records">
+					<td>
+						<h4>
+							<a target="_blank" href="http://{{follow.record.fields.blog.value.fields.url.value}}">
+								{{follow.record.fields.blog.value.fields.title.value}}
+							</a>
+						</h4>
+					</td>
+					<td><div ng-click="unfollow(follow)" class="btn btn-danger pull-right">Unfollow</div></td>
+				</tr>
+			</tbody>
+		</table>
+		<!-- </div> -->
+	</div>
+</div>

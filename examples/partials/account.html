@@ -1,0 +1,28 @@
+<div class="row">
+	<div class="col-md-12">
+		<div class="panel panel-default">
+			<div class="panel-heading">
+				Account
+			</div>
+			<div class="panel-body">
+				<form class="inline-form">
+					<div class="form-group">
+						<lable>First Name</lable>
+						<input name="" class="form-control" ng-model="currentuser.record.fields.firstName.value" placeholder="First Name">
+					</div>
+					<div class="form-group">
+						<lable>Last Name</lable>
+						<input name="" class="form-control" ng-model="currentuser.record.fields.lastName.value" placeholder="Last Name">
+					</div>
+					<div class="form-group">
+						<lable>Email</lable>
+						<input name="" class="form-control" ng-model="currentuser.record.fields.email.value" placeholder="EMail">
+					</div>
+				</form>
+			</div>
+			<div class="panel-footer">
+				<button class="btn btn-success" ng-click="currentuser.$save()">Save</button>
+			</div>
+		</div>
+	</div>
+</div>
