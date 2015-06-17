@@ -2,16 +2,16 @@
 	<a ng-href="http://{{post.record.fields.blog.value.fields.url.value}}">{{post.record.fields.blog.value.fields.title.value}}</a>
 	<br>
 </div>
-<div ng-if="post.record.fields.type.value.fields.type.value=='image'" class="images" ng-if="post.record.fields.content.value.fields.image.value">
-	<div class="image" ng-repeat="image in post.record.fields.content.value.fields.image.value">
-		<img ng-src="{{image.fields.image.value.downloadURL}}">
+<div ng-if="post.record.fields.type.value=='Image'" class="images" ng-if="post.record.fields.content.value.fields.image.value">
+	<div class="image" ng-repeat="image in post.record.fields.images.value">
+		<img ng-src="{{image.downloadURL}}">
 	</div>
 </div>
-<div class="links" ng-if="post.record.fields.type.value.fields.type.value=='Link'">
-	<a class="link-button link-button-default has-thumbnail" target="_blank" ng-href="{{post.record.fields.content.value.fields.link.value.fields.url.value}}">
+<div class="links" ng-if="post.record.fields.type.value=='Link'">
+	<a class="link-button link-button-default has-thumbnail" target="_blank" ng-href="{{post.record.fields.link.value}}">
 		<div class="link-thumbnail images">
-			<div class="image" ng-repeat="image in post.record.fields.content.value.fields.image.value">
-				<img ng-src="{{image.fields.image.value.downloadURL}}">
+			<div class="image" ng-repeat="image in post.record.fields.images.value">
+				<img ng-src="{{image.downloadURL}}">
 			</div>
 		</div>
 		<div class="link">
@@ -27,26 +27,25 @@
 
 					</div>
 					<div class="title">
-						{{post.record.fields.content.value.fields.link.value.fields.title.value}}
+						{{post.record.fields.link_title.value}}
 					</div>
-					<div class="excerpt">
+					<div class="excerpt" ng-bind-html="post.record.fields.link_description.value  | to_trusted">
 					<!-- </a> -->
 					<!-- <a target="_blank" ng-href="{{post.record.fields.content.value.fields.link.value.fields.url.value}}"> -->
-						{{post.record.fields.content.value.fields.link.value.fields.description.value}}
 					</div>
 					<div class="author">
-					{{post.record.fields.content.value.fields.link.value.fields.author.value}}
+					{{post.record.fields.link_author.value}}
 					</div>
 				</div>
 		</div>
 	</a>
 </div>
 <div class="body">
-	<h2 ng-if="post.record.fields.type.value.fields.type.value=='Text'">{{post.record.fields.title.value}}</h2>
+	<h2 ng-if="post.record.fields.type.value=='Text'">{{post.record.fields.title.value}}</h2>
 	<!-- <h2>{{post.created.timestamp}}</h2>
 	<h3>{{post.modified.timestamp}}</h3>
 	<h3>{{post.record.fields.type.value.type.value}}</h3> -->
-	<div class="text" ng-if="post.record.fields.content.value.fields.text.value" ng-bind-html="post.record.fields.content.value.fields.text.value | to_trusted"></div>
+	<div class="text" ng-if="post.record.fields.text.value" ng-bind-html="post.record.fields.text.value | to_trusted"></div>
 </div>
 <div class="tags">
 	<a href="#/tags/{{tag.fields.name.value}}" ng-repeat="tag in post.record.fields.tags.value" class="tag">{{tag.fields.name.value}}</a>

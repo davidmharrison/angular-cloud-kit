@@ -109,7 +109,12 @@ label {
 	flex-shrink: 1;
 	/*margin: .5vw;*/
 	width: 200px;
+	position: relative;
 	/*overflow: hidden;*/
+}
+
+#newpost .images .image {
+	width: 100%;
 }
 
 .links {
@@ -256,25 +261,70 @@ label {
 	/*padding: 7px;*/
 }
 
+.file-wrapper {
+	padding: 6px 12px;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 1;
+	color: #555;
+	text-align: center;
+	background-color: #eee;
+	position: relative;
+	vertical-align: middle;
+	width: 100%;
+	height: 90px;
+	display: block;
+	border: 2px dashed grey;
+}
+
+.file-wrapper.has-images {
+	height: 40px;
+}
+
+.file-wrapper input[type='file'] {
+	position: absolute;
+	top: 0;
+	right: 0;
+	margin: 0;
+	opacity: 0;
+	filter: alpha(opacity=0);
+	font-size: 23px;
+	height: 100%;
+	width: 100%;
+	direction: ltr;
+	cursor: pointer;
+	overflow: hidden;
+}
+.file-wrapper span.fileinput-new {
+	padding: 27px;
+	display: block;
+	height: 100%;
+	font-size: 20px;
+}
+
+.file-wrapper.has-images span.fileinput-new {
+	padding: 2px;
+}
 .remove-image {
-  position: relative;
-  width: 21px;
-  height: 21px;
-  border-radius: 50%;
-  -webkit-box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  box-sizing: border-box;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  cursor: pointer;
-  text-align: center;
-  font-size: 14px;
-  line-height: 19px;
-  background-color: #fff;
-  color: #a1a1a1;
-  border: 1px solid #e3e3e3;
+	position: relative;
+	width: 21px;
+	height: 21px;
+	border-radius: 50%;
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	cursor: pointer;
+	text-align: center;
+	font-size: 14px;
+	line-height: 19px;
+	background-color: #fff;
+	color: #a1a1a1;
+	border: 1px solid #e3e3e3;
+z-index: 10;
 }
 
 .remove-image {

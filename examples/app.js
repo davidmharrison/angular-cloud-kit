@@ -33,6 +33,40 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
           if(blogs) {
           // if($scope.currentuser.record.fields.blogs.value[0]) {
             $scope.newpost.fields = {blog:{value:$rootScope.currentuser.record.fields.blogs.value[0]}};
+
+            var data = {blog:{value:$rootScope.currentuser.record.fields.blogs.value[0]}};
+
+            data.type = {value:'Post'};
+
+            var posts = [];
+
+            for (var i = 0; i <= 2; i++) {
+
+              data.title = {value:Math.random().toString(36).substring(2)};
+              data.text = {value:Math.random().toString(36).substring(2)};
+              // console.log(data);
+              posts.push(data);
+            };
+
+            // Post.save({records:posts},function(result){
+            //   if(result.records) {
+            //     angular.forEach(result.records,function(record){
+            //       if(!$rootScope.posts) {
+            //         $rootScope.posts = {records:[]};
+            //       }
+            //       $rootScope.posts.records.push(record);
+            //     });
+            //   } else if(result.record) {
+            //     $rootScope.posts.records.push(result);
+            //   }
+            //     // $scope.bookmarks.total++;
+            //     // $scope.newpost = {};
+            //     // if($rootScope.currentuser.record.fields.blogs.value[0]) {
+            //     //   $scope.newpost.fields = {blog:{value:$rootScope.currentuser.record.fields.blogs.value[0]}};
+            //     // }
+            //     // $rootScope.loading = false;
+            //     // console.log(result);
+            // });
           // }
           }
         });
@@ -71,33 +105,33 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
 
   $scope.parsedLink = false;
 
-  $scope.checkURL = function(link) {
+  $scope.checkURL = function(post,link) {
     if(link) {
       var url;
-      var httpmatch = link.url.value.match(/(?:^http(?:s*):\/\/)/);
+      var httpmatch = link.match(/(?:^http(?:s*):\/\/)/);
       if(!httpmatch) {
-        url = "http://"+link.url.value;
+        url = "http://"+link;
       } else {
-        url = link.url.value;
+        url = link;
       }
       if(url) {
         $http.post("index.php",{url:url},{headers:{'Content-Type':'application/json'}}).success(function(result){
           if(result.title) {
-            link.title = {value:result.title};
-            link.description = {value:result.description};
+            post.fields.link_title = {value:result.title};
+            post.fields.link_description = {value:result.description};
             if(result.url) {
-              link.url.value = result.url;
+              post.fields.link = {value:result.url};
             } else {
-              link.url.value = url;
+              post.fields.link = {value:url};
             }
             if(result.thumbnail) {
               $scope.thumbnail = result.thumbnail;
             }
             if(result.author) {
-              link.author = {value:result.author};
+              post.fields.link_author = {value:result.author};
             }
             if(result.image) {
-              $scope.newpost.fields.content.image = {image:{value:[result.image]}};
+              $scope.newpost.fields.images = {value:[result.image]};
             }
             if(result.tags) {
               var tags = result.tags.split(",");
@@ -117,7 +151,7 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
 
   $scope.removeImage = function(post) {
     $scope.thumbnail = null;
-    delete $scope.newpost.fields.content.image;
+    delete $scope.newpost.fields.images;
   }
 
   // $scope.newtag = '';
@@ -162,7 +196,7 @@ cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKi
     });
   } else {
     $rootScope.loading = true;
-    Post.query({resultsLimit:10,query:{sortBy:[{fieldName:'___createTime',ascending:false}]}},function(result){
+    Post.query({query:{sortBy:[{fieldName:'___createTime',ascending:false}]}},function(result){
         $rootScope.posts = result;
         $rootScope.loading = false;
         $timeout(function(){
@@ -191,7 +225,7 @@ cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKi
 
   $scope.orderby = function(post,field) {
     // console.log(posts,field);
-    if(post.record) {
+    if(post.record && post.record.created) {
       return post.record.created.timestamp;
     }
   }
@@ -773,13 +807,20 @@ cloudApp.factory('Post', ['$cloudKit','$injector','Model','Content','Types','Com
 	// console.log(Content);
     // var Blog = $injector.get('Blog');
     return $cloudKit('Post','_defaultZone', {
-    	type: new Model.belongsTo(Types),
-    	content: new Model.belongsTo(Content),
+    	// type: new Model.belongsTo(Types),
+      type: 'string',
+    	// content: new Model.belongsTo(Content),
       blog: new Model.belongsTo(Blog),
     	comments: new Model.hasMany(Comment),
     	tags: new Model.hasMany(Tag),
     	title: 'string',
     	url: 'string',
+      link: 'string',
+      text: 'string',
+      link_title: 'string',
+      link_description: 'string',
+      link_author: 'string',
+      images: 'files',
     	allow_comments: 'bool'
 	},{}, {
 		query: {method:'POST', params:{}, isArray:true,headers: {'Content-Type': undefined}},

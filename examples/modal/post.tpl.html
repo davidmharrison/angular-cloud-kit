@@ -43,7 +43,7 @@
                 <!-- ng-bind-html="post.record.fields.title.value" -->
                 <!-- <h4 class="modal-title">New Post</h4> -->
             </div>
-            <div id="newpost" class="post" ng-class="{'is_regular':post.record.fields.type.value.fields.type.value=='Text','is_link':post.record.fields.type.value.fields.type.value=='Link'}">
+            <div id="newpost" class="post" ng-class="{'is_regular':post.record.fields.type.value=='Text','is_link':post.record.fields.type.value=='Link'}">
                 <form class="">
 					<div class="body">
 						<!-- <div class="newpost-type"> -->
@@ -54,7 +54,7 @@
 							</select> -->
 							<!-- <br> -->
 						<!-- </div> -->
-						<div ng-if="post.record.fields.type.value.fields.type.value=='Text'" class="post_content">
+						<div ng-if="post.record.fields.type.value=='Text'" class="post_content">
 							<div class="newpost-title">
 								<!-- <label>Title</label> -->
 								<!-- <input placeholder="Title" class="form-control" ng-model="post.record.fields.title.value"> -->
@@ -68,14 +68,14 @@
 						<label>Type</label>
 						<text></text>
 					</div> -->
-						<div ng-if="post.record.fields.type.value.fields.type.value=='Link'" class="newpost-link">
+						<div ng-if="post.record.fields.type.value=='Link'" class="newpost-link">
 							<!-- <label>URL</label> -->
-							<div ng-if="post.record.fields.content.value.fields.image.value" class="link-thumbnail images">
-								<div class="image" ng-repeat="image in post.record.fields.content.value.fields.image.value">
-									<div ng-click="post.record.fields.content.value.fields.image.value.splice($index,1)" class="remove-image">
+							<div ng-if="post.record.fields.images.value" class="link-thumbnail images">
+								<div class="image" ng-repeat="image in post.record.fields.images.value">
+									<div ng-click="post.record.fields.images.value.splice($index,1)" class="remove-image">
 										<span class="icon"></span>
 									</div>
-									<img ng-src="{{image.fields.image.value.downloadURL}}">
+									<img ng-src="{{image.downloadURL}}">
 								</div>
 							</div>
 							<!--  ng-if="parsedLink" -->
@@ -85,17 +85,17 @@
 
 									</div>
 									<div class="title">
-										<div class="editor editor-plaintext" aria-label="Post title" contenteditable="true" ng-model="post.record.fields.content.value.fields.link.value.fields.title.value"><span>​</span></div>
-										<div ng-show="!post.record.fields.content.value.fields.link.value.fields.title.value" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;">Title</div>
+										<div class="editor editor-plaintext" aria-label="Post title" contenteditable="true" ng-model="post.record.fields.link_title.value"><span>​</span></div>
+										<div ng-show="!post.record.fields.link_title.value" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;">Title</div>
 									</div>
 									<div class="excerpt">
 									<!-- </a> -->
 									<!-- <a target="_blank" ng-href="{{post.record.fields.content.value.fields.link.value.fields.url.value}}"> -->
-										<div class="editor editor-plaintext" aria-label="Post title" contenteditable="true" ng-model="post.record.fields.content.value.fields.link.value.fields.description.value"><span>​</span></div>
-										<div ng-show="!post.record.fields.content.value.fields.link.value.fields.description.value" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;">Summary</div>
+										<div class="editor editor-plaintext" aria-label="Post title" contenteditable="true" ng-model="post.record.fields.link_description.value"><span>​</span></div>
+										<div ng-show="!post.record.fields.link_description.value" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;">Summary</div>
 									</div>
-									<div ng-if="post.record.fields.content.value.fields.link.value.fields.author.value" class="author">
-										{{post.record.fields.content.value.fields.link.value.fields.author.value}}
+									<div ng-if="post.record.fields.link_author.value" class="author">
+										{{post.record.fields.link_author.value}}
 									</div>
 								</div>
 							</div>
@@ -109,18 +109,32 @@
 							<br>
 							<input ng-show="post.record.fields.content.link.title" placeholder="Description" class="form-control" ng-model="post.record.fields.content.link.description.value"> -->
 						</div>
+						<div ng-if="post.record.fields.type.value=='Image'" class="newpost-image">
+							<!-- <label>Images</label> -->
+							<!-- multiple -->
+							<div ng-show="post.record.fields.images.value.length" class="link-thumbnail images">
+								<div class="image" ng-repeat="image in post.record.fields.images.value">
+									<div ng-click="removeImage(image)" class="remove-image">
+										<span class="icon"></span>
+									</div>
+									<img ng-src="{{image.downloadURL || image}}">
+								</div>
+							</div>
+							<span class="file-wrapper" ng-class="{'has-images':post.record.fields.images.value.length}">
+								<span class="fileinput-new">
+									<span ng-show="!post.record.fields.images.value.length">Drop or Select files</span>
+									<span ng-show="post.record.fields.images.value.length">Add more</span>
+								</span>
+								<input class="form-control" multiple type="file" ng-model="post.record.fields.images.value" app-filereader>
+							</span>
+						</div>
 						<div>
 							<div class="newpost-body">
 								<!-- <label>Text</label> -->
 								<!-- <div class="text-area" contenteditable="true" ng-model="post.record.fields.content.text.value"></div> -->
-								<textarea placeholder="Text" class="text-area" ng-model="post.record.fields.content.value.fields.text.value"></textarea>
+								<textarea placeholder="Text" class="text-area" ng-model="post.record.fields.text.value"></textarea>
 								<br>
 							</div>
-						</div>
-						<div ng-if="post.record.fields.type.value.fields.type.value=='image'" class="newpost-image">
-							<!-- <label>Images</label> -->
-							<!-- multiple -->
-							<input class="form-control" type="file" ng-model="post.record.fields.content.image.image.value" app-filereader>
 						</div>
 						<div class="newpost-tags">
 							<div class="tags">

@@ -793,6 +793,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies','angular-cache']).config(
 							        		// delete data[key];
 							    			// console.log(model[key],fieldvalue);
 							    		} else {
+							    			console.log(model,key,model[key],fieldvalue);
 							    			if(model[key] == 'file') {
 							        			// forEach(assets,function(asset){
 							        			// console.log(fieldvalue);
@@ -824,6 +825,20 @@ var cloudKit = angular.module('cloudKit', ['ngCookies','angular-cache']).config(
 									        		pFiles.push(newPromise);
 									        	}
 								        		// });
+											} else if(model[key] == 'files') {
+												forEach(fieldvalue.value,function(file){
+						        					// console.log(key,file);
+							        				var filePromise = module.uploadFile(key,file,recordName,zoneName);
+									        		// console.log(filePromise);
+									        		var newPromise = filePromise.then(function(fileresult){
+									        			console.log(fileresult);
+									        			data[key] = {value:[fileresult[0].data.singleFile]};
+									        			return fileresult[0].data.singleFile;
+									        			// resolve(httpConfig);
+									        		});
+									        		delete data[key];
+									        		pFiles.push(newPromise);
+									        	});
 							        		} else {
 							        			if(fieldvalue.value.recordName && !fieldvalue.value.action) {
 							        				fieldvalue.value.action = "NONE";
@@ -982,6 +997,20 @@ var cloudKit = angular.module('cloudKit', ['ngCookies','angular-cache']).config(
 									        		pFiles.push(newPromise);
 									        	}
 								        		// });
+							        		} else if(model[key] == 'files') {
+												forEach(fieldvalue.value,function(file){
+						        					// console.log(key,file);
+							        				var filePromise = module.uploadFile(key,file,recordName,zoneName);
+									        		// console.log(filePromise);
+									        		var newPromise = filePromise.then(function(fileresult){
+									        			console.log(fileresult);
+									        			data[key] = {value:[fileresult[0].data.singleFile]};
+									        			return fileresult[0].data.singleFile;
+									        			// resolve(httpConfig);
+									        		});
+									        		delete data[key];
+									        		pFiles.push(newPromise);
+									        	});
 							        		}
 							        	}
 						        	});
@@ -1423,9 +1452,9 @@ var cloudKit = angular.module('cloudKit', ['ngCookies','angular-cache']).config(
 								// console.log(cacheId,response);
 								if(name == "query" || name == "get") {
 
-									console.log(cacheId, response);
+									// console.log(cacheId, response);
 
-									cache.put(cacheId, response);
+									// cache.put(cacheId, response);
 								}
 
 								return response;
