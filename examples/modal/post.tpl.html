@@ -28,7 +28,7 @@
 						    <!-- <span class="caret"></span> -->
 						  </button>
 						  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
-						    <li role="presentation"><a ng-click="post.record.fields.allow_comments.value = !post.record.fields.allow_comments.value" href="">
+						    <li role="presentation"><a ng-click="post.record.fields.allow_comments.value = post.record.fields.allow_comments.value == 1 ? 0: 1" href="">
 						    	<span ng-show="post.record.fields.allow_comments.value!=1">Allow Comments</span>
 						    	<span ng-show="post.record.fields.allow_comments.value==1">Remove Comments</span>
 							    <!-- <i class="glyphicon" ng-class="{'glyphicon-ok':post.record.fields.allow_comments.value==1,'glyphicon-remove':post.record.fields.allow_comments.value!=1}"></i> -->
@@ -126,7 +126,7 @@
 							<div class="tags">
 								<span ng-click="post.record.fields.tags.value.splice($index,1);" ng-repeat="tag in post.record.fields.tags.value" class="tag">{{tag.fields.name.value}}</span>
 								<div class="new-tag">
-									<div class="new-tag-editor" ng-blur="addTag(newtag,$event,true);" ng-keyup="addTag(newtag,$event);" ng-model="newtag" contenteditable="true">
+									<div class="new-tag-editor" ng-blur="addTag(newtag,post,$event,true);" ng-keyup="addTag(newtag,post,$event);" ng-model="newtag" contenteditable="true">
 
 									</div>
 									<div ng-show="newtag == null" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;">#tags</div>
@@ -146,7 +146,7 @@
                 <button type="button" class="btn btn-default pull-left" ng-click="$hide();">Close</button>
                 <!-- <button type="button" class="btn btn-primary" ng-click="newPost(newpost)">Create Post</button> -->
                 <div class="btn-group">
-				  <button ng-click="newPost(newpost,action);$hide();" type="button" class="btn btn-info">{{action}}</button>
+				  <button ng-click="savePost(post,action);$hide();" type="button" class="btn btn-info">{{action}}</button>
 				  <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
 				    <span class="caret"></span>
 				    <span class="sr-only">{{action}}</span>

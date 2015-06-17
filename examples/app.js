@@ -25,6 +25,7 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
 
   $rootScope.$watch("user",function(user){
     if(user) {
+      $location.path("/dashboard");
       User.get({records:[{recordName:user.userRecordName}]},function(result){
         $rootScope.currentuser = result.records[0];
 
@@ -39,6 +40,8 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
       // Blog.query({query:{filterBy:[{comparator:"EQUALS",fieldName:"creatorUserRecordID",fieldValue:{value:user.userRecordName}}]}},function(result){
       //   $scope.blogs = result;
       // });
+    } else {
+      $location.path("/login");
     }
   });
 
@@ -53,6 +56,7 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
     // newpost.fields.blog.record = {recordChangeTag:blog.recordChangeTag,recordName:blog.recordName,zoneID:{zoneName:"_defaultZone"},action:"NONE"};
     // operations:[{operationType:'create',record:{recordType:'Bookmarks',fields:newbookmark.fields}}]
     // delete newpost.fields.content.image.value[0]
+      $rootScope.loading = true;
       Post.save(newpost.fields,function(result){
         $rootScope.posts.records.push(result);
         // $scope.bookmarks.total++;
@@ -60,6 +64,7 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
         if($rootScope.currentuser.record.fields.blogs.value[0]) {
           $scope.newpost.fields = {blog:{value:$rootScope.currentuser.record.fields.blogs.value[0]}};
         }
+        $rootScope.loading = false;
         // console.log(result);
     });
   }
@@ -142,6 +147,8 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
 cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKit','Blog','Post','Types','$location','User',function($rootScope,$scope,$filter,$cloudKit,Blog,Post,Types,$location,User){
   var subdomain = $location.host().split(".")[0] != "cloudkit" ? $location.host().split(".")[0] : null;
 
+  $scope.allrecords = true;
+
   if(subdomain) {
     Blog.query({query:{filterBy:[{comparator:"EQUALS",fieldName:"title",fieldValue:{value:subdomain}}]}},function(result){
       $scope.blog = result.records[0];
@@ -154,8 +161,21 @@ cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKi
 
     });
   } else {
+    $rootScope.loading = true;
     Post.query({resultsLimit:10},function(result){
         $rootScope.posts = result;
+        $rootScope.loading = false;
+        $scope.allrecords = false;
+    });
+  }
+
+  $scope.morePosts = function() {
+    // console.log($rootScope.posts);
+    $rootScope.posts.$query(function(result){
+      $rootScope.posts = result;
+      if(result.total == result.records.length) {
+        $scope.allrecords = true;
+      }
     });
   }
 
@@ -211,6 +231,7 @@ cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKi
   }
 
   $scope.savePost = function(post) {
+    console.log(post);
     post.$save();
   }
 }]);
@@ -259,7 +280,7 @@ cloudApp.controller("PostController",['$rootScope','$routeParams','$scope','$clo
 }]);
 
 cloudApp.controller("SearchController",['$scope','$routeParams','Post','Blog',function($scope,$routeParams,Post,Blog){
-  console.log($routeParams);
+  // console.log($routeParams);
 
   $scope.search = $routeParams.search;
 
@@ -274,6 +295,147 @@ cloudApp.controller("SearchController",['$scope','$routeParams','Post','Blog',fu
     });
   }
 }]);
+
+cloudApp.controller("LoginController",['$rootScope','$routeParams','$scope','ipCookie',function($rootScope,$routeParams,$scope,ipCookie){
+    // ipCookie.remove('iCloud.watchinharrison.Read-The-News');
+    $scope.login = function() {
+      window.open($rootScope.redirectUrl);
+    }
+    $rootScope.$watch("user",function(user){
+      // console.log(user);
+    });
+}]);
+
+cloudApp.controller("LogoutController",['$rootScope','$routeParams','$scope','ipCookie',function($rootScope,$routeParams,$scope,ipCookie){
+    ipCookie.remove('iCloud.watchinharrison.Read-The-News');
+}]);
+
+cloudApp.directive('infiniteScroll', ['$rootScope', '$window', '$timeout', function($rootScope, $window, $timeout) {
+    return {
+      link: function(scope, elem, attrs) {
+        var checkWhenEnabled, handler, scrollDistance, scrollEnabled;
+        var ul = angular.element(elem).find("ul");        
+        scrollDistance = 0;
+        if (attrs.infiniteScrollDistance != null) {
+          scope.$watch(attrs.infiniteScrollDistance, function(value) {
+            return scrollDistance = parseInt(value, 10);
+          });
+        }
+        scrollEnabled = true;
+        checkWhenEnabled = false;
+        if (attrs.infiniteScrollDisabled != null) {
+          scope.$watch(attrs.infiniteScrollDisabled, function(value) {
+            scrollEnabled = !value;
+            if (scrollEnabled && checkWhenEnabled) {
+              checkWhenEnabled = false;
+              return handler();
+            }
+          });
+        }
+        handler = function() {
+          var elementBottom, remaining, shouldScroll, windowBottom;
+          windowBottom = elem.height() + elem.scrollTop();
+          elementBottom = ul.height(); //ul.offset().top +
+          // console.log(windowBottom,elementBottom);
+          remaining = elementBottom - windowBottom;
+          // console.log(remaining,elem.height(),scrollDistance,elem.scrollTop(),ul.offset().top,ul.height());
+          shouldScroll = remaining <= elem.height() * scrollDistance;
+          // console.log(shouldScroll,scrollEnabled);
+          if (shouldScroll && scrollEnabled) {
+            if ($rootScope.$$phase) {
+              return scope.$eval(attrs.infiniteScroll);
+            } else {
+              return scope.$apply(attrs.infiniteScroll);
+            }
+          } else if (shouldScroll) {
+            return checkWhenEnabled = true;
+          }
+        };
+        // console.log(elem);
+        elem.on('scroll', handler);
+        scope.$on('$destroy', function() {
+          return elem.off('scroll', handler);
+        });
+        return $timeout((function() {
+          if (attrs.infiniteScrollImmediateCheck) {
+            if (scope.$eval(attrs.infiniteScrollImmediateCheck)) {
+              return handler();
+            }
+          } else {
+            return handler();
+          }
+        }), 0);
+
+        scope.$on('$destroy', function() {
+            handler = null;
+        });
+      }
+    };
+  }
+]);
+
+cloudApp.directive('windowInfiniteScroll', ['$rootScope', '$window', '$timeout', function($rootScope, $window, $timeout) {
+    return {
+      link: function(scope, elem, attrs) {
+        var checkWhenEnabled, handler, scrollDistance, scrollEnabled;
+        $window = $(window);
+        console.log(elem);
+        scrollDistance = 0;
+        if (attrs.infiniteScrollDistance != null) {
+          scope.$watch(attrs.infiniteScrollDistance, function(value) {
+            return scrollDistance = parseInt(value, 10);
+          });
+        }
+        scrollEnabled = true;
+        checkWhenEnabled = false;
+        if (attrs.infiniteScrollDisabled != null) {
+          scope.$watch(attrs.infiniteScrollDisabled, function(value) {
+            scrollEnabled = !value;
+            if (scrollEnabled && checkWhenEnabled) {
+              checkWhenEnabled = false;
+              return handler();
+            }
+          });
+        }
+        handler = function() {
+          // console.log(window);
+          var elementBottom, remaining, shouldScroll, windowBottom;
+          windowBottom = $window.height() + $window.scrollTop();
+          elementBottom = $(elem).offset().top + $(elem).height();
+          remaining = elementBottom - windowBottom;
+          shouldScroll = remaining <= $window.height() * scrollDistance;
+          // console.log("WINDOW SCROLL!",remaining,$window.height(),elementBottom,windowBottom);
+          if (shouldScroll && scrollEnabled) {
+            if ($rootScope.$$phase) {
+              return scope.$eval(attrs.windowInfiniteScroll);
+            } else {
+              return scope.$apply(attrs.windowInfiniteScroll);
+            }
+          } else if (shouldScroll) {
+            return checkWhenEnabled = true;
+          }
+        };
+        $window.on('scroll', handler);
+        scope.$on('$destroy', function() {
+          return $window.off('scroll', handler);
+        });
+        return $timeout((function() {
+          if (attrs.infiniteScrollImmediateCheck) {
+            if (scope.$eval(attrs.infiniteScrollImmediateCheck)) {
+              return handler();
+            }
+          } else {
+            return handler();
+          }
+        }), 0);
+
+        scope.$on('$destroy', function() {
+            handler = null;
+        });
+      }
+    };
+  }
+]);
 
 cloudApp.directive("contenteditable", function() {
   return {
@@ -364,9 +526,44 @@ cloudApp.config(['$cloudKitProvider','$routeProvider','$httpProvider','$location
   $disqusProvider.setShortname = "cloudkit";
 
   $routeProvider.when('/', {
-    templateUrl: 'partials/posts.html',
+    templateUrl: 'partials/index.html',
     controller: 'PostsController',
+    redirectTo: function(params,path,search) {
+      if(!$cloudKitProvider.user) {
+        return "/login"
+      } else {
+        return "/dashboard"
+      }
+    },
     resolve: {
+      // I will cause a 1 second delay
+      // delay: function($q, $timeout) {
+      //   var delay = $q.defer();
+      //   $timeout(delay.resolve, 1000);
+      //   return delay.promise;
+      // }
+    }
+  }).when('/login', {
+    templateUrl: 'partials/login.html',
+    controller: 'LoginController',
+    resolve: {
+      // logout: function() {
+      //   return true;
+      // }
+      // I will cause a 1 second delay
+      // delay: function($q, $timeout) {
+      //   var delay = $q.defer();
+      //   $timeout(delay.resolve, 1000);
+      //   return delay.promise;
+      // }
+    }
+  }).when('/logout', {
+    templateUrl: 'partials/posts.html',
+    controller: 'LogoutController',
+    resolve: {
+      // logout: function() {
+      //   return true;
+      // }
       // I will cause a 1 second delay
       // delay: function($q, $timeout) {
       //   var delay = $q.defer();

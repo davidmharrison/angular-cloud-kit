@@ -64,6 +64,9 @@ label {
 	background-color: #fff;
 	border-radius: 3px;
 }
+.loading img {
+	  margin-top: 20px;
+}
 .posts .post .header, .posts .post .body, .posts .post .footer, .posts .post .tags, #newpost .tags {
 	/*padding: 10px;*/
 	padding-right: 20px;

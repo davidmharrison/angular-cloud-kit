@@ -123,9 +123,16 @@ function Model($injector) {
 	// }];
 }
 
-var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).provider('$cloudKit', function() {
+var cloudKit = angular.module('cloudKit', ['ngCookies','angular-cache']).config(function (CacheFactoryProvider) {
+    angular.extend(CacheFactoryProvider.defaults, { 
+    	maxAge: 15 * 60 * 1000, // Items added to this cache expire after 15 minutes.
+    	cacheFlushInterval: 60 * 60 * 1000, // This cache will clear itself every hour.
+    	deleteOnExpire: 'aggressive', // Items will be deleted from this cache right when they expire.
+		storageMode: 'localStorage' // This cache will use `localStorage`.
+    });
+}).service('Model',Model).provider('$cloudKit', function() {
 	var module          = this;
-	var provider = this;
+	var provider 		= this;
 
 	this.defaults = {
       // Strip slashes by default
@@ -155,11 +162,13 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
         return this;
     };
 
-    module.user = {};
+    module.user = null;
 
-	module.$get = ['$q','$http','ipCookie','$filter','$injector','$rootScope','$cacheFactory', function ($q,$http,ipCookie,$filter,$injector,$rootScope,$cacheFactory) {
+	module.$get = ['$q','$http','ipCookie','$filter','$injector','$rootScope','$cacheFactory','CacheFactory', function ($q,$http,ipCookie,$filter,$injector,$rootScope,$cacheFactory,CacheFactory) {
 
-		var cache = $cacheFactory('dataCache');
+		// var cache = $cacheFactory('dataCache');
+
+		var cache = CacheFactory('cloudKitCache');
 
 		var container = module.containers[0];
 
@@ -274,6 +283,8 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 
 			recordResources[recordName] = {Resources:Resources,Resource:Resource};
 
+			module.subscription(recordName,zoneName);
+
 			if(!zonewatchers[zoneName]) {
 
 				var authurl = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/zones/lookup?ckAPIToken="+container.api;
@@ -290,7 +301,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 					var syncToken = zone.syncToken;
 
 					saveSyncToken(zoneName,syncToken);
-					module.notifications();
+					// module.notifications();
 				});
 				zonewatchers[zoneName] = true;
 			}
@@ -376,7 +387,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 			})
 		}
 
-		module.subscription = function() {
+		module.subscription = function(recordName,zoneName) {
 
 			// container.database = 'public';
 			var authurl = "https://api.apple-cloudkit.com/database/1/"+container.container+"/"+container.environment+"/"+container.database+"/subscriptions/modify?ckAPIToken="+container.api;
@@ -384,7 +395,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 				authurl = authurl+"&ckSession="+encodeURIComponent(container.ckSession);
 			}
 			// ,{apnsEnvironment:'development'}
-			var requestAuth = $http.post(authurl,{operations:[{operationType:'create',subscription:{zoneID:{zoneName:'bookmarksZone'},subscriptionType:'query',query:{recordType:'Bookmarks'},firesOn:['create','update','delete'],zoneWide:false}}]},{headers:{'Content-Type': undefined}});
+			var requestAuth = $http.post(authurl,{operations:[{operationType:'create',subscription:{zoneID:{zoneName:zoneName},subscriptionType:'query',query:{recordType:recordName},firesOn:['create','update','delete'],zoneWide:false}}]},{headers:{'Content-Type': undefined}});
 			requestAuth.success(function(result){
 				// module.longpoll(result.webcourierURL);
 				// console.log(result);
@@ -416,7 +427,10 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 				// module.subscription();
 			}).error(function(error){
 				if(error && error.redirectUrl) {
-					window.open(error.redirectUrl);
+					$rootScope.redirectUrl = error.redirectUrl;
+					$rootScope.user = null;
+					module.user = null;
+					// window.open(error.redirectUrl);
 				}
 			})
 			window.addEventListener('message', function(e) {
@@ -526,6 +540,10 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 
 				Resource[name] = function(a1, a2, a3, a4) {
 
+					// if (name == "query") {
+			  //           module.lookupZone(recordName,zoneName,value,Resource);
+			  //       }
+
 					// console.log(a1, a2, a3, a4);
 
 					var params = {}, data, success, error;
@@ -634,7 +652,79 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 							    //     return;
 							    // }
 							    // && !data.value.recordName
-						        if((!data.record || !data.record.recordName) && !data.records) {
+							    // console.log(data,value);
+							    if(data.recordName) {
+							    	var pFiles = [];
+
+							    	forEach(data.fields,function(fieldvalue,key){
+								    	// forEach(data.record.fields,function(fieldval,fieldkey) {
+								    		if(fieldvalue.type == "REFERENCE" && fieldvalue.value.recordName) {
+								    			if(fieldvalue.value instanceof Resource) {
+								    				fieldvalue.value.$save();
+								    			}
+								    		}
+								    	// });
+
+								    	// console.log(model,key,model[key],value,value.record.fields[key],data,data.fields[key]);
+
+								    	if(model[key] && model[key].model instanceof Function && model[key].many && value.record && value.record.fields[key] && angular.isArray(value.record.fields[key].value)) {
+								    		forEach(data.fields[key].value,function(subval,subindex){
+								    			// console.log(subval,subindex);
+								    			if(subval.recordName) {
+
+								    			} else {
+								    				var newSubModel = new model[key].model(subval.fields);
+								    				var newSubModPromise = newSubModel.$save(subval.fields).then(function(newmodelresult){
+											        	newmodelresult.record.action = "NONE";
+											        	data.fields[key].value[subindex] = newmodelresult.record;
+								    					return newmodelresult;
+								    				});
+								    				pFiles.push(newSubModPromise);
+								    			}
+								    		});
+							    		} else {
+											if(model[key] == 'file') {
+							        			// forEach(assets,function(asset){
+							        			// console.log(fieldvalue);
+							        			if(angular.isArray(fieldvalue.value)) {
+							        				forEach(fieldvalue.value,function(file){
+							        					// console.log(key,file);
+								        				var filePromise = module.uploadFile(key,file,recordName,zoneName);
+										        		// console.log(filePromise);
+										        		var newPromise = filePromise.then(function(fileresult){
+										        			// console.log(fileresult);
+										        			data[key] = {value:fileresult[0].data.singleFile};
+										        			return fileresult[0].data.singleFile;
+										        			// resolve(httpConfig);
+										        		});
+										        		delete data[key];
+										        		pFiles.push(newPromise);
+										        	});
+							        			} else {
+							        				// console.log(key,fieldvalue.value,recordName,zoneName);
+									        		var filePromise = module.uploadFile(key,fieldvalue.value,recordName,zoneName);
+									        		// console.log(filePromise);
+									        		var newPromise = filePromise.then(function(fileresult){
+									        			// console.log(data[key],data,key,fileresult[0].data.singleFile);
+									        			data[key] = {value:fileresult[0].data.singleFile};
+									        			return fileresult[0].data.singleFile;
+									        			// resolve(httpConfig);
+									        		});
+									        		delete data[key];
+									        		pFiles.push(newPromise);
+									        	}
+								        		// });
+							        		}
+							        	}
+							        	// delete httpConfig.data[key];
+						        	});
+									var configurepromise = $q.all(pFiles).then(function(uploadedFiles) {
+								        httpConfig.data.operations = [{operationType:'update',record:data}];
+								        // delete httpConfig.data.record;
+								        resolve(httpConfig);
+								    });
+								    return configurepromise;
+							    } else if((!data.record || !data.record.recordName) && !data.records) {
 						        	// console.log(model,data,value);
 						        	// data.map()
 
@@ -653,7 +743,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 							        	// console.log(model[key],model[key].model,value,value[key]);
 							        	// && !value[key].record.recordName
 							        	if(model[key] && model[key].model instanceof Function && ((model[key].model && !model[key].model.recordName) || !model[key].model) && ((value[key].value && !value[key].value.recordName) || !value[key].value)) {
-							        		console.log(fieldvalue);
+							        		// console.log(fieldvalue);
 							        		// return;
 							        		var newSubModel = new model[key].model(fieldvalue);
 							        		// console.log(newSubModel);
@@ -770,7 +860,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 								    return configurepromise;
 								    // console.log(configurepromise);
 							    } else if(data.record && ((httpConfig.data.operations && !httpConfig.data.operations.record) || !httpConfig.data.operations)) {
-							    	console.log(model);
+							    	// console.log(model);
 							    	var pFiles = [];
 
 							    	forEach(data.record.fields,function(fieldvalue,key){
@@ -779,11 +869,19 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 							    	// 		delete data.record.fields[key];
 							    	// 	}
 
+								    	// forEach(data.record.fields,function(fieldval,fieldkey) {
+								    		if(fieldvalue.type == "REFERENCE" && fieldvalue.value.recordName) {
+								    			if(fieldvalue.value instanceof Resource) {
+								    				fieldvalue.value.$save();
+								    			}
+								    		}
+								    	// });
+
 								    	console.log(model,key,model[key],value,value.record.fields[key],data,data.record.fields[key]);
 
 								    	if(model[key] && model[key].model instanceof Function && model[key].many && value.record && value.record.fields[key] && angular.isArray(value.record.fields[key].value)) {
 								    		forEach(data.record.fields[key].value,function(subval,subindex){
-								    			console.log(subval,subindex);
+								    			// console.log(subval,subindex);
 								    			if(subval.recordName) {
 
 								    			} else {
@@ -922,34 +1020,94 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 
 					var checkSubpromise = checkSub(httpConfig);
 
+					// console.log(httpConfig.url,httpConfig.data);
+
+					
+					if(httpConfig.data.records && httpConfig.data.records.recordName) {
+						var cacheId = httpConfig.data.records.recordName;
+					} else if(httpConfig.data.records && httpConfig.data.records[0] && httpConfig.data.records[0].recordName) {
+						var cacheId = httpConfig.data.records[0].recordName;
+					} else if(httpConfig.data.recordName) {
+						var cacheId = httpConfig.data.recordName;
+					} else if(httpConfig.data.query && httpConfig.data.query.recordType) {
+						var cacheId = httpConfig.data.query.recordType;
+					} else {
+						var cacheId = recordName;
+					}
+
+					// console.log(httpConfig.data);
+
+					if(httpConfig.data.continuationMarker) {
+	                	cacheId = cacheId + "*" + httpConfig.data.continuationMarker;
+	                }
+
+					if(name == "save" || name == "remove" || name == "delete") {
+						// var cachedData = cache.get(cacheId);
+						// console.log(cacheId,cachedData,cache);
+						cache.remove(cacheId);
+						// cache.destroy();
+					}
+
+					if(name == "query" || name == "get") {
+						// console.log(cacheId,httpConfig.data);
+
+						var cachedData = cache.get(cacheId);
+					    // Return the data if we already have it
+					    // console.log(cache);
+					    if (cachedData) {
+
+
+					  		var promise = $q(function(resolve, reject) {
+
+					  			resolve(cachedData);
+					  		});
+
+					      	promise = promise.then(function(response){
+				                var value = responseInterceptor(response);
+
+				                if(value.records) {
+				                	forEach(value.records,function(record,index){
+				                		forEach(record.record.fields,function(fieldval,fieldkey){
+				                			if(fieldval.type=="REFERENCE") {
+				                				record.record.fields[fieldkey].value = new Resource(fieldval.value);
+				                			} else if(fieldval.type=="REFERENCE_LIST") {
+				                				forEach(fieldval.value,function(subval,index){
+				                					record.record.fields[fieldkey].value[index] = new Resource(subval);
+				                				});
+				                			}
+				                		});
+				                		value.records[index] = new Resource(record);
+				                	});
+				                }
+
+				                value = new Resource(value);
+
+				                (success||noop)(value, response.headers);
+				                
+				                return value;
+				            });
+							
+
+					        if (!isInstanceCall) {
+					            // we are creating instance / collection
+					            // - set the initial promise
+					            // - return the instance / collection
+					            value.$promise = promise;
+					            value.$resolved = false;
+
+					            return value;
+					        }
+
+					        return promise;
+					    }
+					}
+
 					var promise = checkSubpromise.then(function(httpConfig) {
 
 						if(container.ckSession) {
 							httpConfig.url = httpConfig.url+"&ckSession="+encodeURIComponent(container.ckSession);
 						}
-
-						// var cacheId = httpConfig.url + '*' + JSON.stringify(httpConfig.data);
-						// // console.log(cacheId);
-					 //    var cachedData = cache.get(cacheId);
-					 //    // Return the data if we already have it
-					 //    if (cachedData) {
-					 //    	// var deferred = $q.defer();
-
-					 //    	var newdeferred = $q.defer();
-						// 	var newpromise = newdeferred.promise;
-
-					 //    	newpromise.then(function(){
-
-						//     	var value = responseInterceptor(cachedData);
-
-						//       	(success||noop)(value,cachedData.headers);
-						//       	return value;
-						// 	});
-
-						// 	newdeferred.resolve();
-
-					 //      	return newpromise;
-					 //    }
+						// console.log(cacheId);
 
 						// console.log(httpConfig);
 
@@ -960,38 +1118,43 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 				            if (data) {
 				              // Need to convert action.isArray to boolean in case it is undefined
 				              // jshint -W018
-				              if (name == "query" && data.records && angular.isArray(data.records) !== (!!action.isArray)) {
-				                throw $resourceMinErr('badcfg',
-				                    'Error in resource configuration. Expected ' +
-				                    'response to contain an {0} but got an {1}',
-				                  action.isArray ? 'array' : 'object',
-				                  angular.isArray(data) ? 'array' : 'object');
-				              }
+				              	if (name == "query" && data.records && angular.isArray(data.records) !== (!!action.isArray)) {
+				                	throw $resourceMinErr('badcfg','Error in resource configuration. Expected ' + 'response to contain an {0} but got an {1}',action.isArray ? 'array' : 'object',angular.isArray(data) ? 'array' : 'object');
+				             	}
 				              // jshint +W018
 				              	if (action.isArray) {
 					                // value.records.length = 0;
 					                value.total = data.total;
 					                value.continuationMarker = data.continuationMarker;
+					                // if(data.continuationMarker) {
+					                // 	cacheId = cacheId + "*" + data.continuationMarker;
+					                // }
 					                // console.log(data);
+
+					                var children = [];
+
 					                forEach(data.records, function (record) {
 					                	// var getcomments = model.comments.$query({query:{recordType:'Comments',filterBy:[{comparator:'EQUALS',fieldName:'post',fieldValue:{value:{action:"NONE",recordName:record.recordName,zoneID:{zoneName:zoneName}},type:'REFERENCE'}}]}});
 					                	// console.log(getcomments);
+					                	var subchildren = [];
+
 					                	forEach(record.fields,function(field,fieldkey){
 						        			if(field.type == "REFERENCE") {
 						        				// var modelFac = new model[fieldkey];
 						        				if(model[fieldkey] && model[fieldkey].model) {
 						        					// field.value = 
 						        					var newmodel = new model[fieldkey].model;
-							        				var getsub = newmodel.$get({records:{recordName:field.value.recordName}})
-							        				getsub.then(function(subres){
+							        				var getsub = newmodel.$get({records:{recordName:field.value.recordName}}).then(function(subres){
 							        					// console.log(subres.record.fields,fieldkey);
 							        					if(subres.record) {
 								        					subres.record.action = "NONE";
 								        				}
-							        					field.value = subres.record;
+							        					field.value = new Resource(subres.record);
+							        					return subres;
 							        					// console.log(subres.record.fields,item.fields.type.value,field,fieldkey);
 							        					// field.value = subres.record.fields[item.fields.type.value].value;
 							        				});
+							        				subchildren.push(getsub);
 							        			}
 						        			} else if(field.type == "REFERENCE_LIST") {
 						        				if(model[fieldkey] && model[fieldkey].model) {
@@ -999,29 +1162,55 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 						        					field.value = [];
 						        					forEach(values,function(referencevalue){
 						        						var newmodel = new model[fieldkey].model;
-						        						var getsub = newmodel.$get({records:{recordName:referencevalue.recordName}})
-								        				getsub.then(function(subres){
+						        						var getsub = newmodel.$get({records:{recordName:referencevalue.recordName}}).then(function(subres){
 								        					// console.log(subres.record.fields,fieldkey);
 								        					if(subres.record) {
 									        					subres.record.action = "NONE";
 									        				}
-								        					field.value.push(subres.record);
+								        					field.value.push(new Resource(subres.record));
+								        					return subres;
 								        					// console.log(subres.record.fields,item.fields.type.value,field,fieldkey);
 								        					// field.value = subres.record.fields[item.fields.type.value].value;
 								        				});
-						        					});				        					
+								        				subchildren.push(getsub);
+						        					});		        					
 						        				}
 						        			}
 						        		});
-					                	if (typeof record === "object") {
-						                    value.records.push(new Resource({record:record}));
-						                } else {
-						                    // Valid JSON values may be string literals, and these should not be converted
-						                    // into objects. These items will not have access to the Resource prototype
-						                    // methods, but unfortunately there
-						                    value.records.push(record);
-					                  	}
+										
+										var allchildren = $q.all(subchildren).then(function(childresult) {
+											// console.log(childresult);
+											if (typeof record === "object") {
+							                    value.records.push(new Resource({record:record}));
+							                    return new Resource({record:record});
+							                } else {
+							                    // Valid JSON values may be string literals, and these should not be converted
+							                    // into objects. These items will not have access to the Resource prototype
+							                    // methods, but unfortunately there
+							                    value.records.push(record);
+							                    return record;
+						                  	}
+										});
+
+										children.push(allchildren);
 					                });
+
+									// return $q.all(records).then(function(){
+
+									// 	// value.$promise = promise;
+
+									// 	response.resource = value;
+
+									// 	// console.log(cacheId,response);
+
+									// 	cache.put(cacheId, response);
+
+									// 	return response;
+									// });
+
+									// return records;
+
+									// value.$promise = records;
 				              	} else {
 					              	if(name == "get" || name == "save") {
 					              		if(data.records[0].serverErrorCode) {
@@ -1061,7 +1250,14 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 							        		data.query = value.query;
 							                data.continuationMarker = value.continuationMarker;
 
+							                var children = [];
+
+							                // console.log(records);
+
 							        		forEach(records,function(record){
+
+							        			var subchildren = [];
+
 							        			forEach(record.fields,function(field,fieldkey){
 							                		// console.log(field,fieldkey);
 								        			if(field.type == "REFERENCE") {
@@ -1069,16 +1265,18 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 								        				if(model[fieldkey] && model[fieldkey].model) {
 								        					// field.value = 
 								        					var newmodel = new model[fieldkey].model;
-									        				var getsub = newmodel.$get({records:{recordName:field.value.recordName}})
-									        				getsub.then(function(subres){
-									        					// console.log(subres.record.fields,fieldkey);
+								        					// console.log(field.value.recordName);
+									        				var getsub = newmodel.$get({records:{recordName:field.value.recordName}}).then(function(subres){
+									        					// console.log(subres);
 									        					if(subres.record) {
 										        					subres.record.action = "NONE";
 										        				}
-									        					field.value = subres.record;
+									        					field.value = new Resource(subres.record);
+									        					return subres;
 									        					// console.log(subres.record.fields,item.fields.type.value,field,fieldkey);
 									        					// field.value = subres.record.fields[item.fields.type.value].value;
 									        				});
+									        				subchildren.push(getsub);
 									        			}
 								        			} else if(field.type == "REFERENCE_LIST") {
 								        				if(model[fieldkey] && model[fieldkey].model) {
@@ -1086,27 +1284,54 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 								        					field.value = [];
 								        					forEach(values,function(referencevalue){
 								        						var newmodel = new model[fieldkey].model;
-								        						var getsub = newmodel.$get({records:{recordName:referencevalue.recordName}})
-										        				getsub.then(function(subres){
+								        						var getsub = newmodel.$get({records:{recordName:referencevalue.recordName}}).then(function(subres){
 										        					// console.log(subres.record.fields,fieldkey);
 										        					if(subres.record) {
 											        					subres.record.action = "NONE";
 											        				}
-										        					field.value.push(subres.record);
+										        					field.value.push(new Resource(subres.record));
+										        					return subres;
 										        					// console.log(subres.record.fields,item.fields.type.value,field,fieldkey);
 										        					// field.value = subres.record.fields[item.fields.type.value].value;
 										        				});
+										        				subchildren.push(getsub);
 								        					});				        					
 								        				}
 								        			}
 								        		});
 
-							        			data.records.push(new Resource({record:record}));
+												// console.log(record);
+
+												var allsubchildren = $q.all(subchildren).then(function(childresult) {
+													// console.log(childresult);
+													data.records.push(new Resource({record:record}));
+													return new Resource({record:record});
+												});
+
+												children.push(allsubchildren);
 							        		});
+											
+											// $q.all(children).then(function(childresult) {
+											// 	// console.log(childresult);
+											// 	if (typeof record === "object") {
+								   //                  value.records.push(new Resource({record:record}));
+								   //                  return new Resource({record:record});
+								   //              } else {
+								   //                  // Valid JSON values may be string literals, and these should not be converted
+								   //                  // into objects. These items will not have access to the Resource prototype
+								   //                  // methods, but unfortunately there
+								   //                  value.records.push(record);
+								   //                  return record;
+							    //               	}
+											// });
+
 						              		// delete data.records;
 							        	} else {
+							        		// console.log(data);
 							        		var record = data.records[0];
 							        		data.record = record;
+
+							        		var children = [];
 
 							        		forEach(record.fields,function(field,fieldkey){
 						                		// console.log(field,fieldkey);
@@ -1115,16 +1340,17 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 							        				if(model[fieldkey] && model[fieldkey].model) {
 							        					// field.value = 
 							        					var newmodel = new model[fieldkey].model;
-								        				var getsub = newmodel.$get({records:{recordName:field.value.recordName}})
-								        				getsub.then(function(subres){
+								        				var getsub = newmodel.$get({records:{recordName:field.value.recordName}}).then(function(subres){
 								        					// console.log(subres.record.fields,fieldkey);
 								        					if(subres.record) {
 									        					subres.record.action = "NONE";
 									        				}
-								        					field.value = subres.record;
+								        					field.value = new Resource(subres.record);
+								        					return subres;
 								        					// console.log(subres.record.fields,item.fields.type.value,field,fieldkey);
 								        					// field.value = subres.record.fields[item.fields.type.value].value;
 								        				});
+								        				children.push(getsub);
 								        			}
 							        			} else if(field.type == "REFERENCE_LIST") {
 							        				if(model[fieldkey] && model[fieldkey].model) {
@@ -1132,17 +1358,18 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 							        					field.value = [];
 							        					forEach(values,function(referencevalue){
 							        						var newmodel = new model[fieldkey].model;
-							        						var getsub = newmodel.$get({records:{recordName:referencevalue.recordName}})
-									        				getsub.then(function(subres){
+							        						var getsub = newmodel.$get({records:{recordName:referencevalue.recordName}}).then(function(subres){
 									        					// console.log(subres.record.fields,fieldkey);
 									        					if(subres.record) {
 										        					subres.record.action = "NONE";
 										        				}
-									        					field.value.push(subres.record);
+									        					field.value.push(new Resource(subres.record));
+									        					return subres;
 									        					// console.log(subres.record.fields,item.fields.type.value,field,fieldkey);
 									        					// field.value = subres.record.fields[item.fields.type.value].value;
 									        				});
-							        					});				        					
+									        				children.push(getsub);
+							        					});			        					
 							        				}
 							        			}
 							        		});
@@ -1152,7 +1379,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 					              	} else if(name == "delete" || name == "remove") {
 					              		forEach(data.records,function(delrecord){
 					              			if(delrecord.deleted) {
-					              				console.log(data, value);
+					              				// console.log(data, value);
 					              			}
 					              		});
 					              		// delete data.records;
@@ -1160,23 +1387,45 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 					              		// data = null;
 					              	}
 					                shallowClearAndCopy(data, value);
-					                value.$promise = promise;
+					                // promise = $q.all(children).then(function(finalres){
+					                // 	console.log(finalres);
+					                // 	return finalres;
+					                // });
+					                value.$promise = promise;// $q.all(children);
+					                // .then(function(eachsub){
+					                // 	console.log(eachsub);
+					                // 	return eachsub;
+					                // });
 				              	}
 				            }
 
 				            // console.log(data,value);
 
-				            if (name == "query") {
-					            module.lookupZone(recordName,zoneName,value,Resource);
-					        }
+				            // value.$resolved = true;
 
-				            value.$resolved = true;
+				            // console.log(value);
 
-				            response.resource = value;
+				            // response.resource = value;
+
+				            // console.log(cacheId,response);
 
 				            // cache.put(cacheId, response);
 
-				            return response;
+				            // return response;
+
+				            return $q.all(children).then(function(){
+
+								// value.$promise = promise;
+
+								response.resource = value;
+
+								// console.log(cacheId,response);
+								if(name == "query" || name == "get") {
+									cache.put(cacheId, response);
+								}
+
+								return response;
+							});
 
 				        }, function(response) {
 				            value.$resolved = true;
@@ -1189,6 +1438,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies']).service('Model',Model).
 					});
 
 			        promise = promise.then(function(response) {
+			        	// console.log(response);
 		                var value = responseInterceptor(response);
 
 		                (success||noop)(value, response.headers);

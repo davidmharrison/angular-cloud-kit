@@ -3,7 +3,11 @@
 
 	</div>
 	<div class="col-md-6">
-		<div class="posts">
+		<div window-infinite-scroll="morePosts()" infinite-scroll-disabled="allrecords" class="posts">
+			<div ng-show="loading" class="text-center loading post">
+				<img src="496.gif">
+				<hr>
+			</div>
 			<div class="post" ng-class="{'is_link':post.record.fields.type.value.fields.type.value=='Link','is_regular':post.record.fields.type.value.fields.type.value=='Text'}" ng-repeat="post in posts.records | orderBy:orderby:true">
 				<div ng-include="'partials/_post.html'"></div>
 				<hr>
