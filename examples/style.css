@@ -202,8 +202,24 @@ label {
 .new-tag {
 	min-width: 50px;
 }
+.options {
+	  margin: 5px 20px;
+}
+.options a {
+	  color: #999;
+	text-decoration: none;
+	margin-right: 20px;
+}
+.options a:hover, .options a.active {
+	color: #000;
+	text-decoration: none;
+}
 .newpost-body {
 	background-color: #fbfbfb;
+}
+.newpost-body.preview {
+	background-color: #fff;
+	height: 130px;
 }
 .newpost-body {
 	padding: 20px;
@@ -217,6 +233,11 @@ label {
 	background-color: transparent;
 	/* -webkit-appearance: initial; */
 	resize: none;
+	border: 0;
+	padding: 0;
+}
+.newpost-title {
+  	font-size: 25px;
 }
 .newpost-tags, .newpost-title, .newpost-body, .newpost-link, .newpost-image {
 	width: 100%;

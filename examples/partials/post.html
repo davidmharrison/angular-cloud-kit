@@ -1,6 +1,8 @@
-<div class="posts">
-	<div class="post" ng-class="{'is_link':post.record.fields.type.value=='Link','is_post':post.record.fields.type.value=='Text'}">
-		<div ng-include="'partials/_post.html'"></div>
-		<hr>
+<div class="container">
+	<div class="posts">
+		<div class="post" ng-class="{'is_link':post.record.fields.type.value=='Link','is_post':post.record.fields.type.value=='Text'}">
+			<div ng-include="'partials/_post.html'"></div>
+			<hr>
+		</div>
 	</div>
 </div>

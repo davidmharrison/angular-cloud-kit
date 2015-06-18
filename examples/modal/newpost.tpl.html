@@ -158,12 +158,18 @@
 								<div ng-show="!newimage" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;  padding: 10px 20px;">URL</div>
 							</div>
 						</div>
-						<div ng-if="(newpost.fields.type.value=='Link' && parsedLink) || newpost.fields.type.value!='Link'">
-							<div class="newpost-body">
+						<div ng-if="(newpost.fields.type.value=='Link' && parsedLink) || (newpost.fields.type.value=='Video' && parsedLink) || newpost.fields.type.value=='Text'">
+							<div class="options">
+								<a ng-click="preview = false" ng-class="{'active':!preview}" href="">Markdown</a> <a ng-class="{'active':preview}" ng-click="preview = true" href="">Preview</a>
+							</div>
+							<div ng-show="!preview" class="newpost-body">
 								<!-- <label>Text</label> -->
 								<!-- <div class="text-area" contenteditable="true" ng-model="newpost.fields.content.text.value"></div> -->
 								<textarea placeholder="Text" class="text-area" ng-model="newpost.fields.text.value"></textarea>
 								<br>
+							</div>
+							<div ng-show="preview" class="newpost-body preview">
+								<div btf-markdown="newpost.fields.text.value"></div>
 							</div>
 						</div>
 						<div ng-if="(newpost.fields.type.value=='Link' && parsedLink) || newpost.fields.type.value!='Link'" class="newpost-tags">

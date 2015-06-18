@@ -52,7 +52,9 @@
 	<!-- <h2>{{post.created.timestamp}}</h2>
 	<h3>{{post.modified.timestamp}}</h3>
 	<h3>{{post.record.fields.type.value.type.value}}</h3> -->
-	<div class="text" ng-if="post.record.fields.text.value" ng-bind-html="post.record.fields.text.value | to_trusted"></div>
+	<div btf-markdown="post.record.fields.text.value">
+	</div>
+	<!-- <div class="text" ng-if="post.record.fields.text.value" ng-bind-html="post.record.fields.text.value | to_trusted"></div> -->
 </div>
 <div class="tags">
 	<a href="#/tags/{{tag}}" ng-repeat="tag in post.record.fields.tags_text.value" class="tag">{{tag}}</a>

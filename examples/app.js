@@ -1,6 +1,6 @@
 // app.js
 
-var cloudApp = angular.module('cloudApp',['cloudKit','ipCookie','mgcrea.ngStrap','ngRoute','ngDisqus']);
+var cloudApp = angular.module('cloudApp',['cloudKit','ipCookie','mgcrea.ngStrap','ngRoute','ngDisqus','btford.markdown','hc.marked']);
 
 cloudApp.filter('to_trusted', ['$sce', function($sce){
     return function(text) {
@@ -638,7 +638,7 @@ cloudApp.directive('appFilereader', function($q) {
 });
 
 
-cloudApp.config(['$cloudKitProvider','$routeProvider','$httpProvider','$locationProvider','$disqusProvider',function($cloudKitProvider,$routeProvider,$httpProvider,$locationProvider,$disqusProvider) {
+cloudApp.config(['$cloudKitProvider','$routeProvider','$httpProvider','$locationProvider','$disqusProvider','markdownConverterProvider','markedProvider',function($cloudKitProvider,$routeProvider,$httpProvider,$locationProvider,$disqusProvider,markdownConverterProvider,markedProvider) {
 	var connection = {
 		container: 'iCloud.watchinharrison.Read-The-News',
 		api: '309696db24cbfcc1b79a0750af4dfa92b89588bc5bbbf16ea9fdebe9d2b3446d',
@@ -653,6 +653,18 @@ cloudApp.config(['$cloudKitProvider','$routeProvider','$httpProvider','$location
   // .rewriteLinks
   // $locationProvider.hashPrefix('');
   $disqusProvider.setShortname = "cloudkit";
+
+  markedProvider.setOptions({
+    gfm: true,
+    tables: true,
+    highlight: function (code) {
+      return hljs.highlightAuto(code).value;
+    }
+  });
+
+  // markdownConverterProvider.config({
+  //   extensions: ['github']
+  // });
 
   $routeProvider.when('/', {
     templateUrl: 'partials/index.html',
