@@ -1,13 +1,23 @@
 <?php
 
 error_reporting(E_ALL);
-// print_r($_POST);
+
+require 'vendor/autoload.php';
+
+// At the top of the file
+use MediaEmbed\MediaEmbed;
+
 $body = @file_get_contents('php://input');
 
 $data = json_decode($body);
 
+$url = $data->url;
+// echo json_encode($MediaObject);
+
+// // print_r($_POST);
+
 libxml_use_internal_errors(true);
-$c = file_get_contents($data->url);
+$c = file_get_contents($url);
 // var_dump($c);
 $d = new DomDocument();
 $d->loadHTML($c);
@@ -16,6 +26,44 @@ $xpath = new domxpath($d);
 
 $result = array();
 $rmetas = array();
+
+$memc = new Memcache;
+
+$cacheAvailable = $memc->connect('localhost',11211);
+
+$uricache = $memc->get($url);
+
+// // Somewhere in your (class) code
+$MediaEmbed = new MediaEmbed();
+
+if ($MediaObject = $MediaEmbed->parseUrl($url)) {
+
+    $MediaObject->setAttribute("width","100%");
+
+    $code = $MediaObject->getEmbedCode();
+
+    $video = $code;
+
+    $attributes = $MediaObject->getAttributes();
+    $thumbnail = $MediaObject->image();
+
+    $name = $MediaObject->name();
+    // $icon = $MediaObject->icon();
+    // $info     = pathinfo($icon);
+    // $icon = 'data:image/' . $info['extension'] . ';base64,' . base64_encode($icon);
+    // var_dump($icon);
+    // $website = $MediaObject->website();
+    // $icon = $MediaObject->icon();
+    
+
+    $height = $MediaObject->getAttributes("height");
+    $width = $MediaObject->getAttributes("width");
+
+    $result['video'] = array("embed_code"=>$video,"attrs"=>$attributes,"thumbnail"=>$thumbnail,"name"=>$name); //,"website"=>$website ,"icon"=>$icon
+    echo json_encode($result);
+    die;
+}
+
 
 // $query = '//*/meta[starts-with(@property, \'og:\')]';
 // $metas = $xpath->query($query);
@@ -55,7 +103,7 @@ foreach ($xpath->query("//meta[@name='author']") as $el) { //[@property='og:desc
     $result['author'] = $el->getAttribute("content");
 }
 foreach ($xpath->query("//meta[@property='article:tag']") as $el) {
-    $result['tags'] = $el->getAttribute("content");
+    $result['tags'][] = $el->getAttribute("content");
 }
 
 if($result['thumbnail']) {
@@ -68,5 +116,7 @@ if($result['thumbnail']) {
 	// $filetype = finfo_file($finfo, $image);
 	$result['image'] = 'data:image/' . $info['extension'] . ';base64,' . base64_encode($image);
 }
+
+$memc->set($data->url,$result);
 
 echo json_encode($result);

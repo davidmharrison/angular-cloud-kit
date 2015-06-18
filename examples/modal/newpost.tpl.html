@@ -78,7 +78,10 @@
 									<img ng-src="{{thumbnail}}">
 								</div>
 							</div>
-							<div ng-if="parsedLink" class="link">
+							<div ng-if="parsedLink" ng-class="{'no-image':!thumbnail}" class="link">
+								<div ng-click="removeLink(newpost)" class="remove-image">
+									<span class="icon"></span>
+								</div>
 								<div class="link-container">
 									<div class="publisher-container">
 
@@ -108,6 +111,20 @@
 							<br>
 							<input ng-show="newpost.fields.content.link.title" placeholder="Description" class="form-control" ng-model="newpost.fields.content.link.description.value"> -->
 						</div>
+						<div ng-if="newpost.fields.type.value=='Video'" class="newpost-link">
+							<div ng-show="video" class="video">
+								<div ng-click="removeVideo(newpost)" class="remove-image">
+									<span class="icon"></span>
+								</div>
+								<div ng-bind-html="video | to_trusted">
+
+								</div>
+							</div>
+							<div ng-if="!parsedLink" class="url">
+								<div class="editor editor-plaintext" aria-label="Post title" contenteditable="true" ng-model-options="{ updateOn: 'default blur', debounce: {'default': 500, 'blur': 0} }" ng-change="checkURL(newpost,newpost.fields.link.value)" ng-model="newpost.fields.link.value"><span>​</span></div>
+								<div ng-show="!newpost.fields.link.value" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;  padding: 10px 20px;">URL</div>
+							</div>
+						</div>
 						<div ng-if="newpost.fields.type.value=='Image'" class="newpost-image">
 							<!-- <label>Images</label> -->
 							<!-- multiple -->
@@ -127,7 +144,7 @@
 								<input class="form-control" multiple type="file" ng-model="newpost.fields.images.value" app-filereader>
 							</span>
 						</div>
-						<div>
+						<div ng-if="(newpost.fields.type.value=='Link' && parsedLink) || newpost.fields.type.value!='Link'">
 							<div class="newpost-body">
 								<!-- <label>Text</label> -->
 								<!-- <div class="text-area" contenteditable="true" ng-model="newpost.fields.content.text.value"></div> -->
@@ -135,9 +152,9 @@
 								<br>
 							</div>
 						</div>
-						<div class="newpost-tags">
+						<div ng-if="(newpost.fields.type.value=='Link' && parsedLink) || newpost.fields.type.value!='Link'" class="newpost-tags">
 							<div class="tags">
-								<span ng-click="newpost.fields.tags.records.splice($index,1);" ng-repeat="tag in newpost.fields.tags.records" class="tag">{{tag.name.value}}</span>
+								<span ng-click="newpost.fields.tags_text.value.splice($index,1);" ng-repeat="tag in newpost.fields.tags_text.value" class="tag">{{tag}}</span>
 								<div class="new-tag">
 									<div class="new-tag-editor" ng-blur="addTag(newtag,$event,true);" ng-keyup="addTag(newtag,$event);" ng-model="newtag" contenteditable="true">
 

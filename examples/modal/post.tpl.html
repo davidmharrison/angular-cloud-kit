@@ -109,6 +109,28 @@
 							<br>
 							<input ng-show="post.record.fields.content.link.title" placeholder="Description" class="form-control" ng-model="post.record.fields.content.link.description.value"> -->
 						</div>
+						<div ng-if="post.record.fields.type.value=='Video'" class="newpost-link">
+							<div ng-show="video" class="video">
+								<div ng-click="removeVideo(newpost)" class="remove-image">
+									<span class="icon"></span>
+								</div>
+								<div ng-bind-html="video | to_trusted">
+
+								</div>
+							</div>
+							<div class="video" ng-show="post.record.fields.video_embed">
+								<div ng-click="removeVideo(post.record)" class="remove-image">
+									<span class="icon"></span>
+								</div>
+								<div ng-bind-html="post.record.fields.video_embed.value | to_trusted">
+
+								</div>
+							</div>
+							<div ng-if="!post.record.fields.video_embed && !video" class="url">
+								<div class="editor editor-plaintext" aria-label="Post title" contenteditable="true" ng-model-options="{ updateOn: 'default blur', debounce: {'default': 500, 'blur': 0} }" ng-change="checkURL(post.record,post.record.fields.link.value)" ng-model="post.record.fields.link.value"><span>​</span></div>
+								<div ng-show="!post.record.fields.link.value" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;  padding: 10px 20px;">URL</div>
+							</div>
+						</div>
 						<div ng-if="post.record.fields.type.value=='Image'" class="newpost-image">
 							<!-- <label>Images</label> -->
 							<!-- multiple -->
@@ -138,7 +160,7 @@
 						</div>
 						<div class="newpost-tags">
 							<div class="tags">
-								<span ng-click="post.record.fields.tags.value.splice($index,1);" ng-repeat="tag in post.record.fields.tags.value" class="tag">{{tag.fields.name.value}}</span>
+								<span ng-click="post.record.fields.tags_text.value.splice($index,1);" ng-repeat="tag in post.record.fields.tags_text.value" class="tag">{{tag}}</span>
 								<div class="new-tag">
 									<div class="new-tag-editor" ng-blur="addTag(newtag,post,$event,true);" ng-keyup="addTag(newtag,post,$event);" ng-model="newtag" contenteditable="true">
 

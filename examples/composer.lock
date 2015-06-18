@@ -1,0 +1,60 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "hash": "bebec214c6ba01c57ed2a58ca6b5081d",
+    "packages": [
+        {
+            "name": "dereuromark/media-embed",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/dereuromark/MediaEmbed.git",
+                "reference": "6c40673cbf9d7a9e0d3731f98b45b2703b01636b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/dereuromark/MediaEmbed/zipball/6c40673cbf9d7a9e0d3731f98b45b2703b01636b",
+                "reference": "6c40673cbf9d7a9e0d3731f98b45b2703b01636b",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Mark Scherer",
+                    "email": "euromark@web.de"
+                }
+            ],
+            "description": "A PHP library to deal with all those media services around, parsing their URLs and displaying their audios/videos.",
+            "keywords": [
+                "embed",
+                "media"
+            ],
+            "time": "2015-06-05 15:23:34"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {
+        "dereuromark/media-embed": 20
+    },
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}
