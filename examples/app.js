@@ -108,6 +108,33 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
 
   $scope.parsedLink = false;
 
+  $scope.checkImage = function(newimage,post,$event) {
+    if(newimage) {
+      // var img = angular.element("<img/>");
+      var img = new Image();
+
+      // console.log(newimage,post,$event);
+
+      $(img).load(function(result) {
+        $scope.$apply(function(){
+          if(!post.fields.images) {
+            post.fields.images = {value:[]};
+          }
+          post.fields.images.value.push(newimage);
+          newimage = "";
+          $scope.newimage = "";
+          $scope.addFromURL = false;
+        });
+        // $event.target.textContent = "";
+        // $event.target.focus();
+      }).error(function () {
+        // notify the user that the image could not be loaded
+      }).attr('src', newimage); //+"?nocache=" + new Date().getTime()
+
+      // img.src = newimage+"?nocache=" + new Date().getTime();
+    }
+  }
+
   $scope.checkURL = function(post,link) {
     $scope.checkingURL = true;
     if(link) {
@@ -161,6 +188,13 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
           }
         });
       }
+    }
+  }
+
+  $scope.removeImageFromImages = function(post,index) {
+    post.fields.images.value.splice(index,1);
+    if(post.fields.images.value.length == 0 ){
+      $scope.addFromURL = false;
     }
   }
 
@@ -572,19 +606,15 @@ cloudApp.directive('appFilereader', function($q) {
                     var element = e.target;
 
                     $q.all(slice.call(element.files, 0).map(readFile)).then(function(values) {
-                            if (element.multiple) { 
-                            	ngModel.$setViewValue(values);
-                            	// var filevalue = [];
-                            	// angular.forEach(values,function(value){
-                            	// 	filevalue.push({image:{value:value},title:{value:""},caption:{value:""}});
-                            	// });                            	
-                            	// ngModel.$setViewValue(filevalue);
-                            }
-                            else {
-                            	ngModel.$setViewValue([values.length ? values[0] : null]);
-                            	// ngModel.$setViewValue({image:{value:values.length ? values[0] : null},title:{value:""},caption:{value:""}});
-                            }
-                        });
+                        if (element.multiple) { 
+                          values = values.concat(ngModel.$viewValue);
+                        	ngModel.$setViewValue(values);
+                        }
+                        else {
+                        	ngModel.$setViewValue([values.length ? values[0] : null]);
+                        	// ngModel.$setViewValue({image:{value:values.length ? values[0] : null},title:{value:""},caption:{value:""}});
+                        }
+                    });
 
                     function readFile(file) {
                         var deferred = $q.defer();

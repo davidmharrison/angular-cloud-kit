@@ -125,24 +125,38 @@
 								<div ng-show="!newpost.fields.link.value" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;  padding: 10px 20px;">URL</div>
 							</div>
 						</div>
-						<div ng-if="newpost.fields.type.value=='Image'" class="newpost-image">
+						<div ng-if="newpost.fields.type.value=='Image'" class="newpost-image newpost-link">
 							<!-- <label>Images</label> -->
 							<!-- multiple -->
 							<div ng-show="newpost.fields.images.value.length" class="link-thumbnail images">
 								<div class="image" ng-repeat="image in newpost.fields.images.value">
-									<div ng-click="removeImage(image)" class="remove-image">
+									<div ng-click="removeImageFromImages(newpost,$index)" class="remove-image">
 										<span class="icon"></span>
 									</div>
 									<img ng-src="{{image.downloadURL || image}}">
 								</div>
-							</div>
-							<span class="file-wrapper" ng-class="{'has-images':newpost.fields.images.value.length}">
-								<span class="fileinput-new">
-									<span ng-show="!newpost.fields.images.value.length">Drop or Select files</span>
-									<span ng-show="newpost.fields.images.value.length">Add more</span>
+							</div>							
+							<span class="new-file">
+								<span ng-hide="addFromURL == true" class="file-wrapper" ng-class="{'has-images':newpost.fields.images.value.length}">
+									<span class="fileinput-new">
+										<span ng-show="!newpost.fields.images.value.length">Drop or Select Files</span>
+										<span ng-show="newpost.fields.images.value.length">Add Another</span>
+									</span>
+									<input class="form-control" multiple type="file" ng-model="newpost.fields.images.value" app-filereader>
 								</span>
-								<input class="form-control" multiple type="file" ng-model="newpost.fields.images.value" app-filereader>
+								<span ng-hide="addFromURL == false" class="file-wrapper" ng-class="{'has-images':newpost.fields.images.value.length}">
+									<a ng-click="addFromURL = true" class="fileinput-new">
+										<span ng-show="!newpost.fields.images.value.length">Add File from Web</span>
+										<span ng-show="newpost.fields.images.value.length">Add Another</span>
+									</a>
+								</span>
 							</span>
+							<div ng-if="addFromURL" class="url">
+								<div class="editor editor-plaintext" aria-label="Post title" contenteditable="true" ng-model-options="{ updateOn: 'default blur', debounce: {'default': 500, 'blur': 0} }" ng-change="checkImage(newimage,newpost)" ng-model="newimage">
+									
+								</div>
+								<div ng-show="!newimage" data-js="editor-placeholder" class="editor-placeholder" style="position: absolute;  padding: 10px 20px;">URL</div>
+							</div>
 						</div>
 						<div ng-if="(newpost.fields.type.value=='Link' && parsedLink) || newpost.fields.type.value!='Link'">
 							<div class="newpost-body">

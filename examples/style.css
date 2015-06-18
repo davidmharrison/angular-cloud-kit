@@ -225,6 +225,7 @@ label {
 .newpost-link .url {
 	padding: 10px 20px;
   	background-color: #f1f1f1;
+  	position: relative;
 }
 
 .editor-slot, .link-container .title, .link-container .excerpt {
@@ -261,7 +262,7 @@ label {
 	/*padding: 7px;*/
 }
 
-.file-wrapper {
+.new-file {
 	padding: 6px 12px;
 	font-size: 14px;
 	font-weight: 400;
@@ -275,6 +276,26 @@ label {
 	height: 90px;
 	display: block;
 	border: 2px dashed grey;
+	display: flex;
+
+	display: -ms-flexbox;
+	-ms-flex-wrap: wrap;
+	-ms-flex-direction: column;
+	-webkit-flex-flow: row wrap;
+	flex-flow: row wrap;
+	display: -webkit-box;
+	display: flex;
+}
+
+.new-file .file-wrapper {
+	position: relative;
+	-webkit-box-flex: auto;
+	-ms-flex: auto;
+	flex: auto;
+	flex-shrink: 1;
+}
+.new-file .file-wrapper:last-of-type {
+	border-left: 1px solid grey;
 }
 
 .file-wrapper.has-images {
@@ -295,14 +316,17 @@ label {
 	cursor: pointer;
 	overflow: hidden;
 }
-.file-wrapper span.fileinput-new {
+.file-wrapper .fileinput-new {
 	padding: 27px;
 	display: block;
 	height: 100%;
 	font-size: 20px;
+	color: #555;
+	text-decoration: none;
+	cursor: pointer;
 }
 
-.file-wrapper.has-images span.fileinput-new {
+.file-wrapper.has-images .fileinput-new {
 	padding: 2px;
 }
 .remove-image {
