@@ -24,9 +24,12 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
   }
 
   $rootScope.$watch("user",function(user){
-    if(user) {
-      $location.path("/dashboard");
-      User.get({records:[{recordName:user.userRecordName}]},function(result){
+    // console.log(user);
+    if(user && user.login) {
+      if($location.path() == "/login") {
+        $location.path("/dashboard");
+      }
+      User.get({records:[{recordName:user.login.userRecordName}]},function(result){
         $rootScope.currentuser = result.records[0];
 
         $scope.$watch("currentuser.record.fields.blogs.value.length",function(blogs){
@@ -74,7 +77,7 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
       // Blog.query({query:{filterBy:[{comparator:"EQUALS",fieldName:"creatorUserRecordID",fieldValue:{value:user.userRecordName}}]}},function(result){
       //   $scope.blogs = result;
       // });
-    } else {
+    } else if(user && !user.login) {
       $location.path("/login");
     }
   });
@@ -106,6 +109,7 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
   $scope.parsedLink = false;
 
   $scope.checkURL = function(post,link) {
+    $scope.checkingURL = true;
     if(link) {
       var url;
       var httpmatch = link.match(/(?:^http(?:s*):\/\/)/);
@@ -116,7 +120,13 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
       }
       if(url) {
         $http.post("index.php",{url:url},{headers:{'Content-Type':'application/json'}}).success(function(result){
-          if(result.title) {
+          if(result.video) {
+            post.fields.video_embed = {value:result.video.embed_code};
+            $scope.video = result.video.embed_code; //'<iframe width="100%" height="304" src="'+result.video+'?feature=oembed" frameborder="0" allowfullscreen></iframe>';
+            $scope.parsedLink = true;
+            $scope.checkingURL = false;
+          }
+          else if(result.title) {
             post.fields.link_title = {value:result.title};
             post.fields.link_description = {value:result.description};
             if(result.url) {
@@ -131,18 +141,23 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
               post.fields.link_author = {value:result.author};
             }
             if(result.image) {
-              $scope.newpost.fields.images = {value:[result.image]};
+              post.fields.images = {value:[result.image]};
             }
             if(result.tags) {
-              var tags = result.tags.split(",");
-              if(!$scope.newpost.fields.tags) {
-                $scope.newpost.fields.tags = {records:[]};
+              if(angular.isArray(result.tags)) {
+                var tags = result.tags;
+              } else {
+                var tags = result.tags.split(",");
+              }
+              if(!$scope.newpost.fields.tags_text) {
+                post.fields.tags_text = {value:[]};
               }
               angular.forEach(tags,function(tag){
-                $scope.newpost.fields.tags.records.push({name:{value:tag}});
+                post.fields.tags_text.value.push(tag);
               });
             }
             $scope.parsedLink = true;
+            $scope.checkingURL = false;
           }
         });
       }
@@ -154,21 +169,40 @@ cloudApp.controller("MainController",['$rootScope','$scope','$cloudKit','$modal'
     delete $scope.newpost.fields.images;
   }
 
+  $scope.removeVideo = function(post) {
+    $scope.video = null;
+    delete $scope.newpost.fields.video_embed;
+  }
+
+  $scope.removeLink = function(post) {
+    post.fields.link = {value:null};
+    post.fields.link_author = {value:null};
+    post.fields.link_title = {value:null};
+    post.fields.link_description = {value:null};
+    post.fields.tags_text = {value:[]};
+    $scope.parsedLink = false;
+  }
+
   // $scope.newtag = '';
 
   $scope.addTag = function(newtag,$event,blur) {
     // console.log($event.keyCode);
     if($event.keyCode == 8 && !newtag) {
-      $scope.newpost.fields.tags.records.splice(-1,1);
+      $scope.newpost.fields.tags_text.value.splice(-1,1);
+      // $scope.newpost.fields.tags.records.splice(-1,1);
     }
     if(($event.keyCode == 13 || $event.keyCode == 188 || blur) && newtag) {
       // if(newtag.match(/,/)) {
         newtag = newtag.replace(',','');
       // }
-      if(!$scope.newpost.fields.tags) {
-        $scope.newpost.fields.tags = {records:[]};
+      if(!$scope.newpost.fields.tags_text) {
+        $scope.newpost.fields.tags_text = {value:[]};
       }
-      $scope.newpost.fields.tags.records.push({name:{value:newtag}});
+      // if(!$scope.newpost.fields.tags) {
+      //   $scope.newpost.fields.tags = {records:[]};
+      // }
+      $scope.newpost.fields.tags_text.value.push(newtag);
+      // $scope.newpost.fields.tags.records.push({name:{value:newtag}});
       // console.log(angular.element($event.target));
       // angular.element($event.target).val("");
       $event.target.textContent = "";
@@ -208,14 +242,14 @@ cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKi
   $scope.morePosts = function() {
     $scope.allrecords = true;
     // console.log($rootScope.posts);
-    $rootScope.posts.$query(function(result){
-      console.log(result);
-      $scope.allrecords = false;
-      // $rootScope.posts = result;
-      if(result.total == result.records.length) {
-        $scope.allrecords = true;
-      }
-    });
+    // $rootScope.posts.$query(function(result){
+    //   console.log(result);
+    //   $scope.allrecords = false;
+    //   // $rootScope.posts = result;
+    //   if(result.total == result.records.length) {
+    //     $scope.allrecords = true;
+    //   }
+    // });
   }
 
   // console.log(Blog);
@@ -245,7 +279,9 @@ cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKi
   $scope.deletePost = function(post,index) {
     post.$remove(function(res){
       // console.log(1,index);
+      // console.log($rootScope.posts.records);
       var posts = $filter("orderBy")($rootScope.posts.records,$scope.orderby,true);
+      // console.log(posts);
       posts.splice(index,1);
       $rootScope.posts.records = posts;
       // console.log($rootScope.posts,posts);
@@ -258,10 +294,10 @@ cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKi
       // if(newtag.match(/,/)) {
         newtag = newtag.replace(',','');
       // }
-      if(!post.record.fields.tags) {
-        post.record.fields.tags = {value:[]};
+      if(!post.record.fields.tags_text) {
+        post.record.fields.tags_text = {value:[]};
       }
-      post.record.fields.tags.value.push({fields:{name:{value:newtag}}});
+      post.record.fields.tags_text.value.push(newtag);
       // console.log(angular.element($event.target));
       // angular.element($event.target).val("");
       $event.target.textContent = "";
@@ -270,9 +306,33 @@ cloudApp.controller("PostsController",['$rootScope','$scope','$filter','$cloudKi
   }
 
   $scope.savePost = function(post) {
-    console.log(post);
+    // console.log(post);
     post.$save();
   }
+}]);
+
+cloudApp.controller("TaggedController",['$rootScope','$routeParams','$scope','$cloudKit','Blog','Post','Types','$location','User',function($rootScope,$routeParams,$scope,$cloudKit,Blog,Post,Types,$location,User){
+  var tag = $routeParams.tag;
+  if(tag) {
+    $scope.searchtag = tag;
+    $rootScope.loading = true;
+    Post.query({query:{sortBy:[{fieldName:'___createTime',ascending:false}],filterBy:[{comparator:"CONTAINS_ANY_TOKENS",fieldValue:{value:tag},fieldName:'tags_text'}]}},function(result){
+        $rootScope.posts = result;
+        $rootScope.loading = false;
+        // $timeout(function(){
+        //   $scope.allrecords = false;
+        // },3000);
+    });
+  }
+
+  // $scope.filterTag = function(post) {
+  //   if(post.record.fields.tags_text && post.record.fields.tags_text.value.indexOf($routeParams.tag) != -1) {
+  //     return true;
+  //   } else {
+  //     return false;
+  //   }
+  // }
+
 }]);
 
 cloudApp.controller("BlogController",['$rootScope','$routeParams','$scope','$cloudKit','Blog','Post','Types','$location','User',function($rootScope,$routeParams,$scope,$cloudKit,Blog,Post,Types,$location,User){
@@ -321,14 +381,14 @@ cloudApp.controller("PostController",['$rootScope','$routeParams','$scope','$clo
 cloudApp.controller("SearchController",['$scope','$routeParams','Post','Blog',function($scope,$routeParams,Post,Blog){
   // console.log($routeParams);
 
-  $scope.search = $routeParams.search;
+  $scope.search = $routeParams.search.replace("+"," ");
 
   if($routeParams.search) {
-    Post.query({resultsLimit:10,query:{filterBy:[{comparator:"CONTAINS_ALL_TOKENS",fieldValue:{value:$routeParams.search}}]}},function(searchresult){
+    Post.query({resultsLimit:10,query:{filterBy:[{comparator:"CONTAINS_ANY_TOKENS",fieldValue:{value:$routeParams.search}}]}},function(searchresult){
       $scope.postsearchresults = searchresult;
           // $scope.posts = $scope.blog.record.fields.posts.value;
     });
-    Blog.query({resultsLimit:10,query:{filterBy:[{comparator:"CONTAINS_ALL_TOKENS",fieldValue:{value:$routeParams.search}}]}},function(searchresult){
+    Blog.query({resultsLimit:10,query:{filterBy:[{comparator:"CONTAINS_ANY_TOKENS",fieldValue:{value:$routeParams.search}}]}},function(searchresult){
       $scope.blogsearchresults = searchresult;
           // $scope.posts = $scope.blog.record.fields.posts.value;
     });
@@ -418,7 +478,7 @@ cloudApp.directive('windowInfiniteScroll', ['$rootScope', '$window', '$timeout',
       link: function(scope, elem, attrs) {
         var checkWhenEnabled, handler, scrollDistance, scrollEnabled;
         $window = $(window);
-        console.log(elem);
+        // console.log(elem);
         scrollDistance = 0;
         if (attrs.infiniteScrollDistance != null) {
           scope.$watch(attrs.infiniteScrollDistance, function(value) {
@@ -665,6 +725,17 @@ cloudApp.config(['$cloudKitProvider','$routeProvider','$httpProvider','$location
       //   return delay.promise;
       // }
     }
+  }).when('/tags/:tag', {
+    templateUrl: 'partials/posts.html',
+    controller: 'TaggedController',
+    resolve: {
+      // I will cause a 1 second delay
+      // delay: function($q, $timeout) {
+      //   var delay = $q.defer();
+      //   $timeout(delay.resolve, 1000);
+      //   return delay.promise;
+      // }
+    }
   }).when('/account', {
     templateUrl: 'partials/account.html',
     controller: 'AccountController',
@@ -812,7 +883,8 @@ cloudApp.factory('Post', ['$cloudKit','$injector','Model','Content','Types','Com
     	// content: new Model.belongsTo(Content),
       blog: new Model.belongsTo(Blog),
     	comments: new Model.hasMany(Comment),
-    	tags: new Model.hasMany(Tag),
+    	// tags: new Model.hasMany(Tag),
+      tags_text: 'string',
     	title: 'string',
     	url: 'string',
       link: 'string',

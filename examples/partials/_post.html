@@ -40,6 +40,13 @@
 		</div>
 	</a>
 </div>
+<div class="media" ng-if="post.record.fields.type.value=='Video'">
+	<div class="link-thumbnail videos">
+		<div class="video" ng-bind-html="post.record.fields.video_embed.value | to_trusted">
+			<!-- <img ng-src="{{image.downloadURL}}"> -->
+		</div>
+	</div>
+</div>
 <div class="body">
 	<h2 ng-if="post.record.fields.type.value=='Text'">{{post.record.fields.title.value}}</h2>
 	<!-- <h2>{{post.created.timestamp}}</h2>
@@ -48,7 +55,7 @@
 	<div class="text" ng-if="post.record.fields.text.value" ng-bind-html="post.record.fields.text.value | to_trusted"></div>
 </div>
 <div class="tags">
-	<a href="#/tags/{{tag.fields.name.value}}" ng-repeat="tag in post.record.fields.tags.value" class="tag">{{tag.fields.name.value}}</a>
+	<a href="#/tags/{{tag}}" ng-repeat="tag in post.record.fields.tags_text.value" class="tag">{{tag}}</a>
 </div>
 <div class="footer">
 	<div ng-if="post.record.fields.allow_comments.value==1" class="comments pull-left">
@@ -75,7 +82,7 @@
 			    <!-- <span class="caret"></span> -->
 			  </button>
 			  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
-			    <li role="presentation"><a ng-href="{{post.record.fields.url.value}}">Permalink</a></li>
+			    <li role="presentation"><a ng-href="#/posts/{{post.record.recordName}}">Permalink</a></li>
 			    <li role="presentation"><a ng-href="{{post.record.fields.url.value}}">Facebook</a></li>
 			    <li role="presentation"><a ng-href="{{post.record.fields.url.value}}">Twitter</a></li>
 			  </ul>
