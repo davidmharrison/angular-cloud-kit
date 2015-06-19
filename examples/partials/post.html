@@ -1,8 +1,36 @@
-<div class="container">
-	<div class="posts">
-		<div class="post" ng-class="{'is_link':post.record.fields.type.value=='Link','is_post':post.record.fields.type.value=='Text'}">
-			<div ng-include="'partials/_post.html'"></div>
-			<hr>
+<header class="intro-header" style="background-image: url({{post.record.fields.images.value[0].downloadURL}})">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+                <!-- ng-class="{'no-image':!post.image}" -->
+                <div class="post-heading" heading-parallex ng-if="post.record.fields.type.value == 'Image'">
+                    <h1>{{post.record.fields.title.value}}</h1>
+                    <h2 class="subheading">{{post.record.fields.subtitle.value}}</h2>
+                    <span ng-if="post.record.created.timestamp" class="meta">Posted<!--  by <a href="#">{{post.author}}</a> --> on {{post.record.created.timestamp | formatdate}}</span>
+                    <!-- <span ng-if="!post.published_at" class="meta">Created on {{post.created_at}}</span> -->
+                </div>
+                <div class="post-heading" heading-parallex ng-show="post.record.fields.type.value == 'Link'">
+					<h1>{{post.record.fields.link_title.value}}</h1>
+                    <!-- <h2 class="subheading">{{post.record.fields.value}}</h2> -->
+                    <span ng-if="post.record.created.timestamp" class="meta">Posted<!--  by <a href="#">{{post.author}}</a> --> on {{post.record.created.timestamp | formatdate}}</span>
+                </div>
+                <div class="post-heading no-image" heading-parallex ng-show="post.record.fields.type.value == 'Text'">
+					<h1>{{post.record.fields.title.value}}</h1>
+                    <!-- <h2 class="subheading">{{post.record.fields.value}}</h2> -->
+                    <span ng-if="post.record.created.timestamp" class="meta">Posted<!--  by <a href="#">{{post.author}}</a> --> on {{post.record.created.timestamp | formatdate}}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<article>
+	<div class="container">
+		<div class="posts">
+			<div class="post" ng-class="{'is_link':post.record.fields.type.value=='Link','is_post':post.record.fields.type.value=='Text'}">
+				<div ng-include="'partials/_post.html'"></div>
+				<hr>
+			</div>
 		</div>
 	</div>
-</div>
+</article>

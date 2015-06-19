@@ -84,7 +84,7 @@
 			    <!-- <span class="caret"></span> -->
 			  </button>
 			  <ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu1">
-			    <li role="presentation"><a ng-href="#/posts/{{post.record.recordName}}">Permalink</a></li>
+			    <li role="presentation"><a ng-href="http://{{post.record.fields.blog.value.fields.url.value}}/#/posts/{{post.record.recordName}}">Permalink</a></li>
 			    <li role="presentation"><a ng-href="{{post.record.fields.url.value}}">Facebook</a></li>
 			    <li role="presentation"><a ng-href="{{post.record.fields.url.value}}">Twitter</a></li>
 			  </ul>

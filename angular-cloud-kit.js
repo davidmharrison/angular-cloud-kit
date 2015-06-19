@@ -304,7 +304,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies', 'angular-cache']).config
             }
 
             module.longpoll = function(url) {
-                $http.get(url).success(function(result) {
+                $http.get(url,{ignoreLoadingBar: true}).success(function(result) {
 
                     if (result.ck.qry.zid != '_defaultZone') {
                         module.getChanges(result.ck.qry.zid);
@@ -887,7 +887,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies', 'angular-cache']).config
                                             }
 
 
-                                            console.log(model, key, model[key], value, value.record.fields[key], data, data.record.fields[key]);
+                                            // console.log(model, key, model[key], value, value.record.fields[key], data, data.record.fields[key]);
 
                                             if (model[key] && model[key].model instanceof Function && model[key].many && value.record && value.record.fields[key] && angular.isArray(value.record.fields[key].value)) {
                                                 forEach(data.record.fields[key].value, function(subval, subindex) {
@@ -907,7 +907,7 @@ var cloudKit = angular.module('cloudKit', ['ngCookies', 'angular-cache']).config
 
                                             } else {
 
-                                                console.log(model[key]);
+                                                // console.log(model[key]);
                                                 if (model[key] == 'file') {
 
 
@@ -1183,12 +1183,16 @@ var cloudKit = angular.module('cloudKit', ['ngCookies', 'angular-cache']).config
                                                 delete data.records;
                                             }
                                         } else if (name == "delete" || name == "remove") {
-                                            forEach(data.records, function(delrecord) {
-                                                if (delrecord.deleted) {
+                                        	console.log(data,value);
+                                        	data.record = data.records[0];
+                                        	delete data.records;
+                                            // forEach(data.records, function(delrecord) {
+                                            //     if (delrecord.deleted) {
 
-                                                }
-                                            });
+                                            //     }
+                                            // });
                                         }
+
                                         shallowClearAndCopy(data, value);
 
                                         value.$promise = promise;

@@ -4,18 +4,20 @@
 	<base href="/">
 	<!-- Latest compiled and minified CSS -->
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" />
-	<link href="style.css" rel="stylesheet" />
+	<link rel="stylesheet" href="bower_components/angular-loading-bar/src/loading-bar.css" />
+	<link href="style/clean-blog.min.css" rel="stylesheet" />
+	<link href="style/style.css" rel="stylesheet" />
 	<title>CloudKit Module</title>
 	<script src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 </head>
-<body>
-	<div ng-controller="MainController" class="">
+<body ng-controller="MainController" ng-class="{'homepage':!subdomain}">
+	<div>
 		<!-- Hello World! -->
 		<!-- <div cloud-kit-auth></div> -->
 		<!-- <div id="username"></div> -->
 		<!-- <p>{{posts.records.length}} /{{posts.total}}</p> -->
 
-		<nav class="navbar navbar-default navbar-greensea navbar-fixed-top">
+		<nav ng-class="{'sans-image':!subdomain || !post.record.fields.images.value[0].downloadURL}" class="navbar navbar-default navbar-custom navbar-greensea navbar-fixed-top">
 	      <!-- We use the fluid option here to avoid overriding the fixed width of a normal container within the narrow content columns. -->
 	      <div class="container-fluid">
 	        <div class="navbar-header">
@@ -25,7 +27,7 @@
 	            <span class="icon-bar"></span>
 	            <span class="icon-bar"></span>
 	          </button>
-	          <a class="navbar-brand" href="#/">Blog</a>
+	          <a class="navbar-brand" href="http://cloudkit.dev/#/">Blog</a>
 	        </div>
 	        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-6">
         	<form ng-submit="doSearch(search)" class="navbar-form navbar-left" role="search">
@@ -86,6 +88,7 @@
 	<script src="bower_components/angular-strap/dist/angular-strap.min.js"></script>
 	<script src="bower_components/angular-strap/dist/angular-strap.tpl.min.js"></script>
 	<script src="bower_components/angular-sanitize/angular-sanitize.js"></script>
+	<script src="bower_components/angular-loading-bar/src/loading-bar.js"></script>
 	<script src="bower_components/showdown/src/showdown.js"></script>
 	<!-- <script src="bower_components/showdown/src/extensions/github.js" /> -->
 	<script src="bower_components/angular-markdown-directive/markdown.js"></script>
@@ -93,7 +96,8 @@
 	<script src="bower_components/angular-marked/angular-marked.js"></script>
 	<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
-	<script src="angular-cloud-kit.js"></script>
-	<script src="angular-disqus.min.js"></script>
-	<script src="app.js"></script>
+	<script src="scripts/angular-cloud-kit.js"></script>
+	<script src="scripts/angular-disqus.min.js"></script>
+	<script src="scripts/clean-blog.min.js"></script>
+	<script src="scripts/app.js"></script>
 </body>
